@@ -30,7 +30,7 @@ export default function Index() {
           className="w-32 h-32 mb-6" // Tăng kích thước logo cho dễ nhìn hơn trong chế độ sáng
         />
         <Text
-          className={`text-5xl font-bold ${colorScheme === "dark" ? "text-orange-600" : "text-gray-900"} mb-3`} // Điều chỉnh kích thước chữ và màu sắc cho dễ nhìn hơn trong chế độ sáng
+          className={`text-5xl font-bold ${colorScheme === "dark" ? "text-orange-600" : "text-orange-600"} mb-3`} // Điều chỉnh kích thước chữ và màu sắc cho dễ nhìn hơn trong chế độ sáng
         >
           OWN MEAL
         </Text>
