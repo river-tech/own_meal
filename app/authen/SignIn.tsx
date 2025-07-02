@@ -101,7 +101,7 @@ const SignIn = () => {
             </TouchableOpacity>
 
             {/* Sign In button */}
-            <TouchableOpacity className="bg-orange-600 p-4 rounded-lg mb-6">
+            <TouchableOpacity onPress={()=>router.push("/dashboard/Home")} className="bg-orange-600 p-4 rounded-lg mb-6">
               <Text className="text-white text-center text-lg font-bold">SIGN IN</Text>
             </TouchableOpacity>
 
