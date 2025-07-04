@@ -22,6 +22,7 @@ import { useRouter } from "expo-router";
 
 const meal: IMealCard[] = [
   {
+    mealId: 1,
     mealName: "Breakfast",
     currentKcal: 400,
     targetKcal: 500,
@@ -33,6 +34,7 @@ const meal: IMealCard[] = [
     targetFat: 40,
   },
   {
+    mealId: 2,
     mealName: "Lunch",
     currentKcal: 600,
     targetKcal: 700,
@@ -44,6 +46,7 @@ const meal: IMealCard[] = [
     targetFat: 50,
   },
   {
+    mealId: 3,
     mealName: "Dinner",
     currentKcal: 500,
     targetKcal: 600,
@@ -92,6 +95,8 @@ export default function Home() {
 
   const router = useRouter();
 
+  const [date, setDate] = React.useState(new Date()); // State to hold the selected date
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LinearGradient
@@ -102,7 +107,10 @@ export default function Home() {
       >
         <Navbar />
         <View className="flex justify-between h-[80%]">
-          <DatePickerComponent />
+          <DatePickerComponent 
+            onDateChange={(date : Date) => setDate(date)}
+            initialDate={new Date().toISOString().split("T")[0]} // Format YYYY-MM-DD
+          />
           {/* Ensure CaloriesProgress is placed below DatePickerComponent */}
           <CaloriesProgress totalCalories={2000} consumedCalories={80} />
           <NutritionOverview
