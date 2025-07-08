@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faArrowLeft, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faMagnifyingGlass, faPlus, faPlusCircle } from "@fortawesome/free-solid-svg-icons";
 import { useSearchParams } from "expo-router/build/hooks";
 
 const tabs: ("Explore" | "My food" | "Favorites")[] = [
@@ -19,24 +19,86 @@ const tabs: ("Explore" | "My food" | "Favorites")[] = [
 ];
 
 const mockData = {
-  Explore: Array(5).fill({
-    name: "Rice",
-    quantity: "200g",
-    carbs: 50,
-    protein: 6,
-    fat: 0,
-    total: 260,
-  }),
-  "My food": Array(8).fill({
-    name: "Rice",
-    quantity: "200g",
-    carbs: 50,
-    protein: 6,
-    fat: 0,
-    total: 260,
-  }),
-  Favorites: [],
+  Explore: [
+    {
+      id: "1",
+      name: "Rice",
+      quantity: "100g",
+      carbs: 28,
+      protein: 2.7,
+      fat: 0.3,
+      total: 130,
+    },
+    {
+      id: "2",
+      name: "Chicken Breast",
+      quantity: "100g",
+      carbs: 0,
+      protein: 31,
+      fat: 3.6,
+      total: 165,
+    },
+    {
+      id: "3",
+      name: "Broccoli",
+      quantity: "100g",
+      carbs: 6.6,
+      protein: 2.8,
+      fat: 0.4,
+      total: 34,
+    },
+  ],
+  "My food": [
+    {
+      id: "4",
+      name: "Banana",
+      quantity: "100g",
+      carbs: 23,
+      protein: 1.1,
+      fat: 0.3,
+      total: 89,
+    },
+    {
+      id: "5",
+      name: "Salmon",
+      quantity: "100g",
+      carbs: 0,
+      protein: 20,
+      fat: 13,
+      total: 208,
+    },
+    {
+      id: "6",
+      name: "Egg",
+      quantity: "50g",
+      carbs: 0.6,
+      protein: 6,
+      fat: 5,
+      total: 68,
+    },
+  ],
+  Favorites: [
+    {
+      id: "2",
+      name: "Chicken Breast",
+      quantity: "100g",
+      carbs: 0,
+      protein: 31,
+      fat: 3.6,
+      total: 165,
+    },
+    {
+      id: "6",
+      name: "Egg",
+      quantity: "50g",
+      carbs: 0.6,
+      protein: 6,
+      fat: 5,
+      total: 68,
+    },
+  ],
 };
+
 
 const FoodResearch = () => {
   const [search, setSearch] = useState("");
@@ -78,6 +140,20 @@ const FoodResearch = () => {
           />
         </TouchableOpacity>
       </View>
+
+      <View className="absolute top-20 right-4 z-50">
+        <TouchableOpacity
+        onPress={() => router.push("/dashboard/CreateFood")}
+          className={`w-8 h-8 rounded-full border-white border-2 items-center justify-center shadow-md`}
+        >
+          <FontAwesomeIcon
+            icon={faPlus}
+            color={"#fff"}
+            size={16}
+          />
+        </TouchableOpacity>
+      </View>
+      
 
       {/* Header */}
       <View className={`bg-orange-400 ${!isDark ? "bg-[#F4A261]": " bg-[#FF7500]"} px-4 py-5 `}>
@@ -125,7 +201,9 @@ const FoodResearch = () => {
         data={filteredData}
         keyExtractor={(item, index) => `${item.name}-${index}`}
         renderItem={({ item }) => (
-          <TouchableOpacity className="flex-row justify-between items-center px-4 py-3 border-b border-gray-300">
+          <TouchableOpacity
+            onPress={()=>router.push(`/dashboard/FoodDetail?mealId=${mealId}&foodId=${item.id}`)}
+          className="flex-row justify-between items-center px-4 py-3 border-b border-gray-300">
             <Text className={isDark ? "text-white" : "text-black"}>{`${item.name} : ${item.quantity}`}</Text>
              <Text className="font-medium">
               <Text className={isDark ? "text-white" : "text-black"}>C: </Text>
