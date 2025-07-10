@@ -2,13 +2,13 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",                      // ✅ Thêm dòng này
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["src/*"]                   // ✅ Trỏ alias "@" về thư mục "src"
     }
   },
   "include": [
+    "src",                               // ✅ Thêm nếu mã nguồn nằm trong "src"
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",

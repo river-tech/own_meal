@@ -1,4 +1,4 @@
-export  interface IMealCard {
+export interface IMealCard {
   mealId: number;
   mealName: string;
   currentKcal: number;
@@ -24,4 +24,11 @@ interface IMeal {
   id: number;
   mealName: string;
   foodList: FoodItem[];
+}
+
+export interface IMealSetting {
+  mealId: number;
+  mealName: string;
+  percentKcal: number;
+  time?: string;
 }

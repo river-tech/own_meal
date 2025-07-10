@@ -15,7 +15,7 @@ import DatePickerComponent from "../Element/DatePicker";
 import CaloriesProgress from "../Element/CaloriesProgress ";
 import NutritionOverview from "../Element/MacroPercent";
 import MealCard from "../Element/MealCard";
-import { IMealCard } from "@/model/meal";
+import { IMealCard } from "../../model/meal";
 import Animated from "react-native-reanimated"; // Đảm bảo bạn đã cài Reanimated
 import WaterCard from "../Element/WaterProgress";
 import { useRouter } from "expo-router";

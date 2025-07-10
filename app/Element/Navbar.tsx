@@ -21,7 +21,7 @@ export default function Navbar() {
     <View className={`flex-row justify-between items-center px-4 mt-20`}>
       {/* Avatar + Name */}
       <View className="flex-row items-center">
-        <TouchableOpacity className="flex-row items-center" >
+        <TouchableOpacity onPress={()=>router.push('/Profile/Personal')} className="flex-row items-center" >
           <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden mr-[10px] z-10 bg-white">
             <Image
               source={require("../../assets/images/avatar.png")} // Adjusted path
