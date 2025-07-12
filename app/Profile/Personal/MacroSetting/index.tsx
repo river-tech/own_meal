@@ -500,7 +500,7 @@ export default function MacroSettingsScreen() {
                 </Text>
 
                 {/* Input tên bữa ăn */}
-                <View className=" ml-2 flex-row items-center flex-1  gap-2">
+                <View className=" ml-2 flex-row items-center flex-1   gap-2">
                   <TextInput
                     value={meal.name}
                     onChangeText={(text) => {
@@ -509,7 +509,7 @@ export default function MacroSettingsScreen() {
                       setMeals(newMeals);
                     }}
                     placeholder="Meal name"
-                    className={`w-[150px] ml-2 mr-1 border rounded-md px-2 py-1 text-sm ${
+                    className={`w-[100px] ml-2 mr-1 border rounded-md px-2 py-1 text-sm ${
                       darkMode
                         ? "text-white bg-[#1e1e1e] border-gray-600"
                         : "text-black bg-white border-gray-300"

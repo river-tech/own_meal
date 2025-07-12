@@ -77,7 +77,7 @@ export default function SettingsScreen() {
 
   const signOut = () => {
     // Handle sign up logic here
-    console.log("Sign Up clicked");
+    router.push("/");
   };
 
   return (
@@ -147,10 +147,10 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
       {/* Settings */}
-      <View className={`${cardBg}  mx-5 mt-8 rounded-xl  p-4 shadow-md`}>
+      <View className={`${cardBg} flex-col gap-2  mx-5 mt-8 pt-5 rounded-xl  p-4 shadow-md`}>
         <View className="flex-row gap-y-10 justify-between items-center mb-4">
-          <View className="flex-row gap-2 items-center">
-            <FontAwesomeIcon icon={faBell} color="#FF7A00" />
+          <View className="flex-row gap-3 items-center">
+            <FontAwesomeIcon size={20} icon={faBell} color="#FF7A00" />
             <Text className={`font-medium ${textColor}`}>Notification</Text>
           </View>
           <CustomToggle
@@ -159,14 +159,14 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={()=>router.push(`/OwnSecure/OtpCheck?email=${email}`)} className="flex-row gap-2 items-center mb-6">
+        <TouchableOpacity onPress={()=>router.push(`/OwnSecure/OtpCheck?email=${email}`)} className="flex-row gap-3 items-center mb-6">
           <FontAwesomeIcon icon={faKey} color="#FF7A00" />
           <Text className={textColor}>Change Password</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={signOut}
-          className="flex-row gap-2 items-center"
+          className="flex-row gap-3 items-center"
         >
           <FontAwesomeIcon icon={faSignOutAlt} color="#FF7A00" />
           <Text className={textColor}>Sign out</Text>

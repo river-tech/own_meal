@@ -86,7 +86,7 @@ const NotificationScreen = () => {
       </View>
 
       {/* Filter Buttons */}
-      <View className="flex-row justify-start gap-2 mt-4 pl-2">
+      <View className="flex-row justify-start gap-2 mt-4  pl-4 mb-2">
         {/* All Button */}
         <TouchableOpacity
           onPress={() => setFilter("All")}
@@ -126,7 +126,7 @@ const NotificationScreen = () => {
 
       {/* Notifications List */}
       <FlatList
-        className="mx-2"
+        className="mx-4"
         data={filteredNotifications}
         renderItem={({ item }) => (
           <View

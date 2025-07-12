@@ -1,6 +1,6 @@
 
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { use, useEffect } from "react";
 import {
   Text,
   View,
@@ -18,6 +18,8 @@ export default function Index() {
   const lightBackground = require("../assets/images/light_bg.png");
   const darkBackground = require("../assets/images/dark_bg.png");
   const router = useRouter();
+
+  
 
   return (
     <ImageBackground

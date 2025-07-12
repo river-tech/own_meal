@@ -1,3 +1,5 @@
+import { faWeightScale } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -21,7 +23,10 @@ export default function Navbar() {
     <View className={`flex-row justify-between items-center px-4 mt-20`}>
       {/* Avatar + Name */}
       <View className="flex-row items-center">
-        <TouchableOpacity onPress={()=>router.push('/Profile/Personal')} className="flex-row items-center" >
+        <TouchableOpacity
+          onPress={() => router.push("/Profile/Personal")}
+          className="flex-row items-center"
+        >
           <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden mr-[10px] z-10 bg-white">
             <Image
               source={require("../../assets/images/avatar.png")} // Adjusted path
@@ -43,7 +48,13 @@ export default function Navbar() {
       {/* Notification + Setting */}
       <View className="flex-row gap-5">
         <TouchableOpacity
-        onPress={() => router.push("/Profile/Notification")}
+        onPress={() => router.push("/Profile/WeightLog")}
+          className={`w-12 h-12 rounded-full shadow items-center justify-center ${isDark ? "bg-gray-700" : "bg-white"}`}
+        >
+          <FontAwesomeIcon color={isDark ? "#FB923C" : "#FB923C"} icon={faWeightScale} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push("/Profile/Notification")}
           className={`w-12 h-12 rounded-full shadow items-center justify-center ${isDark ? "bg-gray-700" : "bg-white"}`}
         >
           <BellIcon color={isDark ? "#FB923C" : "#FB923C"} size={iconSize} />
