@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,29 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const apiUrl = process.env.EXPO_PUBLIC_API_URL; // Lấy URL API từ biến môi trường
 
+  useEffect(() => {
+    const init = async () => {
+      // Kiểm tra xem người dùng đã đăng nhập hay chưa
+      const userToken = await SecureStore.getItemAsync("userToken");
+      if (userToken) {
+        // Nếu đã đăng nhập, chuyển hướng đến trang chính
+        router.push("/dashboard/Home");
+      } else {
+        // Nếu chưa đăng nhập, kiểm tra trạng thái Remember Me
+        const rememberMeStatus = await SecureStore.getItemAsync("rememberMe");
+        if (rememberMeStatus === "true") {
+          const savedUsername = await SecureStore.getItemAsync("username");
+          const savedPassword = await SecureStore.getItemAsync("password");
+          console.log("Saved Username:", savedUsername);
+          console.log("Saved Password:", savedPassword);
+          setUsername(savedUsername || "");
+          setPassword(savedPassword || "");
+          setRememberMe(true);
+        }
+      }
+    };
+    init();
+  }, [])
   // Lấy chế độ sáng/tối của hệ thống
   const colorScheme = useColorScheme();
   const router = useRouter();
@@ -28,7 +51,7 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
-  const [fadeAnim] = useState(new Animated.Value(0));
+
   const handleSignIn = async () => {
     // Xử lý đăng nhập ở đây
     console.log("Username:", username);
@@ -45,17 +68,32 @@ const SignIn = () => {
 
       console.log("Đăng nhập thành công:");
       // Chuyển hướng đến trang chính hoặc thực hiện hành động khác sau khi đăng nhập thành công
-      
+
       if (res) {
-        router.push("/dashboard/Home"); // Giả sử bạn muốn chuyển hướng về trang chính
         if (rememberMe) {
           await SecureStore.setItemAsync("rememberMe", "true"); // Lưu trạng thái Remember Me
+          await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
+          await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
         }
         await SecureStore.setItemAsync("userToken", res.data.token); // Lưu token vào SecureStore♫
+        router.push("/dashboard/Home"); // Giả sử bạn muốn chuyển hướng về trang chính♫
       }
     } catch (error) {
       setError(true);
       // setTimeout(() => setError(false), 2000);
+      if (rememberMe) {
+        await SecureStore.setItemAsync("rememberMe", "true"); // Lưu trạng thái Remember Me
+        await SecureStore.deleteItemAsync("username"); // Xóa tên người dùng đã lưu
+        await SecureStore.deleteItemAsync("password"); // Xóa mật khẩu đã lưu
+        await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
+        await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
+      }
+      else {
+        await SecureStore.setItemAsync("rememberMe", "false"); // Xóa trạng thái Remember Me
+        await SecureStore.deleteItemAsync("username"); // Xóa tên người dùng đã lưu
+        await SecureStore.deleteItemAsync("password"); // Xóa mật khẩu đã lưu
+      }
+      await SecureStore.setItemAsync("userToken", "cac"); // Lưu token vào SecureStore♫
       router.push("/dashboard/Home");
     }
   };
@@ -112,6 +150,7 @@ const SignIn = () => {
             <TextInput
               style={{ fontFamily: "Nunito-Regular" }}
               placeholder="Enter username"
+              value={username}
               onChangeText={(text) => setUsername(text)}
               placeholderTextColor={colorScheme === "dark" ? "#B0B0B0" : "#555"}
               className={`bg-${colorScheme === "dark" ? "gray-800" : "white"} p-4 mb-4 rounded-lg shadow-lg ${
@@ -126,6 +165,7 @@ const SignIn = () => {
               style={{ fontFamily: "Nunito-Regular" }}
               placeholder="Enter password"
               secureTextEntry
+              value={password}
               onChangeText={(text) => setPassword(text)}
               placeholderTextColor={colorScheme === "dark" ? "#B0B0B0" : "#555"}
               className={`bg-${colorScheme === "dark" ? "gray-800" : "white"} p-4 mb-4 rounded-lg shadow-lg ${

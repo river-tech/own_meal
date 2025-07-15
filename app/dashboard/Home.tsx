@@ -19,6 +19,11 @@ import { IMealCard } from "../../model/meal";
 import Animated from "react-native-reanimated"; // Đảm bảo bạn đã cài Reanimated
 import WaterCard from "../Element/WaterProgress";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { jwtDecode } from "jwt-decode";
+import axios from "axios";
+import { IUser } from "model/user";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const meal: IMealCard[] = [
   {
@@ -92,8 +97,42 @@ export default function Home() {
   const isDark = colorScheme === "dark";
   const lightGradientColors: [string, string] = ["#FFE4C4", "#FFF7ED"];
   const darkBgColor = "#1E1E1E";
-
   const router = useRouter();
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL
+  const [userInfo, setUserInfo] = React.useState<IUser | null>(null);
+  const getUser = async () => {
+    const userToken = await SecureStore.getItemAsync("userToken");
+    const store = await SecureStore.getItemAsync("store");
+    if(!store){
+      try {
+       const res = await axios.get(`${apiUrl}/auth/user`, {
+         headers: {
+           Authorization: `Bearer ${userToken}`,
+         },
+       });
+       if(res){
+          const userData: IUser = res.data;
+          setUserInfo(userData);
+          await SecureStore.setItemAsync("store", JSON.stringify(userData)); // Lưu thông tin người dùng vào SecureStore
+       }
+      } catch (error) {
+       
+      }
+    }
+  }
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const userToken = await SecureStore.getItemAsync("userToken");
+      
+      if (!userToken) {
+        router.push("/authen/SignIn"); // Chuyển hướng đến trang đăng nhập nếu chưa đăng nhập
+        return
+      }
+     
+    };
+    checkLoginStatus();
+     getUser(); 
+  },[])
 
   const [date, setDate] = React.useState(new Date()); // State to hold the selected date
 

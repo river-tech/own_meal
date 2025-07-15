@@ -10,15 +10,15 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faX } from "@fortawesome/free-solid-svg-icons";
+
 import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-
+const CLOUD_NAME = "dqupovatf"; // ví dụ: "myapp123"
+const UPLOAD_PRESET = "demo_frame_print"; // ví dụ: "expo_upload"
 const InputRow = ({ label, value, onChange, color }: any) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -83,9 +83,38 @@ export default function CreateFoodScreen() {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+       uploadToCloudinary(result.assets[0].uri); 
     }
   };
+  const uploadToCloudinary = async (uri: string) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri,
+        type: "image/jpeg",
+        name: "upload.jpg",
+      } as any);
+      formData.append("upload_preset", UPLOAD_PRESET);
 
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+      const response = await fetch(cloudinaryUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        setImage(data.secure_url); // Gửi URL về component cha
+        console.log("Cloudinary response:", data.secure_url);
+      } else {
+        console.error("Cloudinary error:", data);
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+    } 
+  };
   const router = useRouter();
 
   return (
@@ -238,7 +267,8 @@ export default function CreateFoodScreen() {
           <View className="mt-6 px-10 pb-10 flex-row justify-between">
             <TouchableOpacity
               onPress={() => router.back()}
-            className="bg-red-500 px-6 py-2 rounded">
+              className="bg-red-500 px-6 py-2 rounded"
+            >
               <Text className="text-white font-bold">Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity className="bg-orange-500 px-6 py-2 rounded">

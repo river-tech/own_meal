@@ -12,3 +12,12 @@ export enum EUserDietType {
   LowFat = "LowFat", // 60%C–15%F–25%P
   HighCarb = "HighCarb", // 65%C–20%F–15%P
 }
+
+export interface IUser {
+  id: int;
+  username: string;
+  email: string;
+  name: string;
+  avatar_url: string;
+  notification_enable: string;
+}

@@ -1,7 +1,8 @@
 import { faWeightScale } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { useRouter } from "expo-router";
-import React from "react";
+import { IUser } from "model/user";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { BellIcon, Cog6ToothIcon } from "react-native-heroicons/outline";
+import * as SecureStore from "expo-secure-store";
 
 export default function Navbar() {
   const colorScheme = useColorScheme();
@@ -18,6 +20,16 @@ export default function Navbar() {
   // Set icon size dynamically based on color scheme
   const iconSize = isDark ? 20 : 24;
   const router = useRouter();
+  const [userInfo, setUserInfo] = React.useState<IUser | null>(null);
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const userInfo = await SecureStore.getItemAsync("store");
+      if (userInfo) {
+        setUserInfo(JSON.parse(userInfo));
+      }
+    } 
+  },[])
+  
 
   return (
     <View className={`flex-row justify-between items-center px-4 mt-20`}>
@@ -39,7 +51,7 @@ export default function Navbar() {
           <View
             className={`bg-orange-500 px-5 pl-45 py-1 rounded-full shadow-lg`}
           >
-            <Text className="font-semibold text-white text-lg">River</Text>
+            <Text className="font-semibold text-white text-lg">{userInfo?.name}</Text>
           </View>
         </TouchableOpacity>
         {/* Avatar */}

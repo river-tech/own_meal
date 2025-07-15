@@ -24,11 +24,15 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import * as SecureStore from "expo-secure-store";
+const CLOUD_NAME = "dqupovatf"; // ví dụ: "myapp123"
+const UPLOAD_PRESET = "demo_frame_print"; // ví dụ: "expo_upload"
 
 export default function SettingsScreen() {
   const isDark = useColorScheme() === "dark";
   const [name, setName] = useState("");
   const [notificationEnabled, setNotificationEnabled] = useState(true);
+ 
 
   const textColor = isDark ? "text-white" : "text-black";
   const bgColor = isDark ? "bg-[#1e1e1e]" : "bg-[#fff4e6]";
@@ -36,9 +40,11 @@ export default function SettingsScreen() {
   const router = useRouter();
 
   const email = "ahmobile17022005@gmail.com"
+  
 
   const [avatar, setAvatar] = useState("");
   const [isEditName, setIsEditName] = useState(false);
+  
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -52,8 +58,45 @@ export default function SettingsScreen() {
 
     if (!result.canceled) {
       setAvatar(result.assets[0].uri);
+      uploadToCloudinary(result.assets[0].uri); // Gửi ảnh lên Cloudinary
     }
   };
+   const uploadToCloudinary = async (uri: string) => {
+    try {
+     
+      const formData = new FormData();
+      formData.append("file", {
+        uri,
+        type: "image/jpeg",
+        name: "upload.jpg",
+      } as any);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+      const response = await fetch(cloudinaryUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+     
+        setAvatar(data.secure_url); // Gửi URL về component cha
+        console.log("Cloudinary response:", data.secure_url);
+       
+       
+      } else {
+        
+        console.error("Cloudinary error:", data);
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+     
+    } 
+  };
+
   const CustomToggle = ({
     value,
     onToggle,
@@ -75,8 +118,9 @@ export default function SettingsScreen() {
     );
   };
 
-  const signOut = () => {
+  const signOut = async () => {
     // Handle sign up logic here
+    await SecureStore.deleteItemAsync("userToken");
     router.push("/");
   };
 

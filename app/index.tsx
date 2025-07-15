@@ -9,6 +9,7 @@ import {
   ImageBackground,
   useColorScheme,
 } from "react-native";
+import * as SecureStore from "expo-secure-store";
 
 export default function Index() {
   // Lấy chế độ sáng/tối của hệ thống
@@ -18,6 +19,16 @@ export default function Index() {
   const lightBackground = require("../assets/images/light_bg.png");
   const darkBackground = require("../assets/images/dark_bg.png");
   const router = useRouter();
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const userToken = await SecureStore.getItemAsync("userToken");
+      if (userToken) {
+        router.push("/dashboard/Home"); // Chuyển hướng đến trang chính nếu đã đăng nhập
+      }
+    };
+    checkLoginStatus();
+  }, []);
 
   
 
