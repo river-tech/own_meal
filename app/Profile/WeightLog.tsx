@@ -27,6 +27,8 @@ import { useRouter } from "expo-router";
 import moment from "moment";
 import { LineChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const screenWidth = Dimensions.get("window").width;
 enum WeightUnit {
@@ -55,193 +57,193 @@ interface WeightLog {
   weight: number;
   weight_unit: WeightUnit;
 }
-const weightLogs: WeightLog[] = [
-  {
-    id: 1,
-    log_date: new Date("2025-07-01"),
-    weight: 72.5,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 2,
-    log_date: new Date("2025-07-02"),
-    weight: 72.4,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 3,
-    log_date: new Date("2025-07-03"),
-    weight: 72.3,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 4,
-    log_date: new Date("2025-07-04"),
-    weight: 72.2,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 5,
-    log_date: new Date("2025-07-05"),
-    weight: 72.1,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 6,
-    log_date: new Date("2025-07-06"),
-    weight: 72.0,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 7,
-    log_date: new Date("2025-07-07"),
-    weight: 71.9,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 8,
-    log_date: new Date("2025-07-08"),
-    weight: 71.9,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 9,
-    log_date: new Date("2025-07-09"),
-    weight: 71.8,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 10,
-    log_date: new Date("2025-07-10"),
-    weight: 71.7,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 11,
-    log_date: new Date("2025-07-11"),
-    weight: 71.7,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 12,
-    log_date: new Date("2025-07-12"),
-    weight: 71.6,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 13,
-    log_date: new Date("2025-07-13"),
-    weight: 71.5,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 14,
-    log_date: new Date("2025-07-14"),
-    weight: 71.5,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 15,
-    log_date: new Date("2025-07-15"),
-    weight: 71.4,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 16,
-    log_date: new Date("2025-07-16"),
-    weight: 71.3,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 17,
-    log_date: new Date("2025-07-17"),
-    weight: 71.3,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 18,
-    log_date: new Date("2025-07-18"),
-    weight: 71.2,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 19,
-    log_date: new Date("2025-07-19"),
-    weight: 71.2,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 20,
-    log_date: new Date("2025-07-20"),
-    weight: 71.1,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 21,
-    log_date: new Date("2025-07-21"),
-    weight: 71.1,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 22,
-    log_date: new Date("2025-07-22"),
-    weight: 71.0,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 23,
-    log_date: new Date("2025-07-23"),
-    weight: 71.0,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 24,
-    log_date: new Date("2025-07-24"),
-    weight: 70.9,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 25,
-    log_date: new Date("2025-07-25"),
-    weight: 70.8,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 26,
-    log_date: new Date("2025-07-26"),
-    weight: 70.8,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 27,
-    log_date: new Date("2025-07-27"),
-    weight: 70.7,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 28,
-    log_date: new Date("2025-07-28"),
-    weight: 70.6,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 29,
-    log_date: new Date("2025-07-29"),
-    weight: 70.6,
-    weight_unit: WeightUnit.KG,
-  },
-  {
-    id: 30,
-    log_date: new Date("2025-07-30"),
-    weight: 70.5,
-    weight_unit: WeightUnit.KG,
-  },
-];
+// const weightLogs: WeightLog[] = [
+//   {
+//     id: 1,
+//     log_date: new Date("2025-07-01"),
+//     weight: 72.5,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 2,
+//     log_date: new Date("2025-07-02"),
+//     weight: 72.4,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 3,
+//     log_date: new Date("2025-07-03"),
+//     weight: 72.3,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 4,
+//     log_date: new Date("2025-07-04"),
+//     weight: 72.2,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 5,
+//     log_date: new Date("2025-07-05"),
+//     weight: 72.1,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 6,
+//     log_date: new Date("2025-07-06"),
+//     weight: 72.0,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 7,
+//     log_date: new Date("2025-07-07"),
+//     weight: 71.9,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 8,
+//     log_date: new Date("2025-07-08"),
+//     weight: 71.9,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 9,
+//     log_date: new Date("2025-07-09"),
+//     weight: 71.8,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 10,
+//     log_date: new Date("2025-07-10"),
+//     weight: 71.7,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 11,
+//     log_date: new Date("2025-07-11"),
+//     weight: 71.7,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 12,
+//     log_date: new Date("2025-07-12"),
+//     weight: 71.6,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 13,
+//     log_date: new Date("2025-07-13"),
+//     weight: 71.5,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 14,
+//     log_date: new Date("2025-07-14"),
+//     weight: 71.5,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 15,
+//     log_date: new Date("2025-07-15"),
+//     weight: 71.4,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 16,
+//     log_date: new Date("2025-07-16"),
+//     weight: 71.3,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 17,
+//     log_date: new Date("2025-07-17"),
+//     weight: 71.3,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 18,
+//     log_date: new Date("2025-07-18"),
+//     weight: 71.2,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 19,
+//     log_date: new Date("2025-07-19"),
+//     weight: 71.2,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 20,
+//     log_date: new Date("2025-07-20"),
+//     weight: 71.1,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 21,
+//     log_date: new Date("2025-07-21"),
+//     weight: 71.1,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 22,
+//     log_date: new Date("2025-07-22"),
+//     weight: 71.0,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 23,
+//     log_date: new Date("2025-07-23"),
+//     weight: 71.0,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 24,
+//     log_date: new Date("2025-07-24"),
+//     weight: 70.9,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 25,
+//     log_date: new Date("2025-07-25"),
+//     weight: 70.8,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 26,
+//     log_date: new Date("2025-07-26"),
+//     weight: 70.8,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 27,
+//     log_date: new Date("2025-07-27"),
+//     weight: 70.7,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 28,
+//     log_date: new Date("2025-07-28"),
+//     weight: 70.6,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 29,
+//     log_date: new Date("2025-07-29"),
+//     weight: 70.6,
+//     weight_unit: WeightUnit.KG,
+//   },
+//   {
+//     id: 30,
+//     log_date: new Date("2025-07-30"),
+//     weight: 70.5,
+//     weight_unit: WeightUnit.KG,
+//   },
+// ];
 
 export default function WeightTrackingScreen() {
   const router = useRouter();
   const darkMode = useColorScheme() === "dark";
-  const [logs, setLogs] = useState<WeightLog[]>(weightLogs);
+  const [logs, setLogs] = useState<WeightLog[]>([]);
   const [todayLogs, setTodayLogs] = useState<number>();
   const [isLogging, setIsLogging] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -254,6 +256,7 @@ export default function WeightTrackingScreen() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [unit, setUnit] = useState<WeightUnit>(WeightUnit.KG);
+
   const toggleArrowRotation = () => {
     Animated.timing(arrowRotation, {
       toValue: open ? 0 : 1, // Nếu mở thì xoay về 0, nếu đóng thì xoay 180 độ
@@ -345,10 +348,48 @@ export default function WeightTrackingScreen() {
         setDataChart(logs);
     }
     console.log("Initial data chart:", logs);
-  }, [chartTab,logs]);
+  }, [chartTab, logs]);
 
   // Get the week number of the year
-  
+  const getLogData = async () => {
+    const weightData = await AsyncStorage.getItem("weightData");
+
+    if (weightData) {
+      const raw: any[] = JSON.parse(weightData);
+      const parsedData: WeightLog[] = raw.map((log) => ({
+        ...log,
+        log_date: new Date(log.log_date), // <-- chuyển string thành Date
+      }));
+      setLogs(parsedData);
+      console.log("Weight logs from AsyncStorage:", parsedData);
+    } else {
+      try {
+        // call API to get weight logs
+      } catch (error) {}
+      // setLogs(weightLogs);
+      // console.log("Default weight logs:", weightLogs);
+      // await AsyncStorage.setItem("weightData", JSON.stringify(weightLogs));
+    }
+  };
+
+  useEffect(() => {
+    getLogData();
+  }, []);
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const isLogged = logs.some(
+      (log) => new Date(log.log_date).toDateString() === today
+    );
+    setTodayLogs(
+      logs.find((log) => new Date(log.log_date).toDateString() === today)
+        ?.weight || 0
+    );
+    console.log("Is logged today:", isLogged);
+    console.log("Today's logs:", todayLogs);
+    setIsLogging(isLogged);
+  }, [logs]);
+
   const nextChart = () => {
     if (!startDate || !endDate) return;
 
@@ -401,50 +442,43 @@ export default function WeightTrackingScreen() {
     outputRange: ["0deg", "180deg"], // Góc quay từ 0 độ đến 180 độ
   });
 
-  useEffect(() => {
-    const today = new Date().toDateString();
-    const isLogged = weightLogs.some(
-      (log) => new Date(log.log_date).toDateString() === today
-    );
-    setTodayLogs(
-      weightLogs.find((log) => new Date(log.log_date).toDateString() === today)
-        ?.weight || 0
-    );
-
-    setIsLogging(isLogged);
-  }, [weightLogs]);
-
-  const addWeightLog = (date: Date) => {
+  const addWeightLog = async (date: Date) => {
     if (!todayLogs) {
       Alert.alert("Warning", "Please enter a valid value", [{ text: "OK" }]);
       return;
     }
+    console.log("Adding weight log for date:", date);
+    console.log("Weight value:", todayLogs);
 
-    const formattedDate = date.toDateString();
-
-    const updatedLogs = [...logs];
-    const existingIndex = updatedLogs.findIndex(
-      (log) => new Date(log.log_date).toDateString() === formattedDate
+    const isExistingLog = logs.some(
+      (log) => new Date(log.log_date).toDateString() === date.toDateString()
     );
 
-    const newEntry = {
-      id: existingIndex >= 0 ? updatedLogs[existingIndex].id : logs.length + 1,
-      log_date: date,
-      weight: todayLogs,
-      weight_unit: WeightUnit.KG,
-    };
-
-    if (existingIndex >= 0) {
+    if (isExistingLog) {
       // Nếu log đã tồn tại → cập nhật
-      updatedLogs[existingIndex] = newEntry;
+      const updatedLogs = logs.map((log) =>
+        new Date(log.log_date).toDateString() === date.toDateString()
+          ? { ...log, weight: todayLogs }
+          : log
+      );
+      setLogs(updatedLogs);
+      await AsyncStorage.setItem("weightData", JSON.stringify(updatedLogs));
+      console.log("Weight log updated:", updatedLogs);
     } else {
       // Nếu chưa có → thêm mới
-      updatedLogs.push(newEntry);
+      const newLog = {
+        id: logs.length + 1,
+        log_date: date,
+        weight: todayLogs,
+        weight_unit: WeightUnit.KG,
+      };
+      setLogs([...logs, newLog]);
+      await AsyncStorage.setItem(
+        "weightData",
+        JSON.stringify([...logs, newLog])
+      );
+      console.log("New weight log added:", newLog);
     }
-
-    setLogs(updatedLogs);
-    setIsLogging(true);
-    console.log("Updated logs:", updatedLogs);
   };
 
   return (
@@ -503,10 +537,13 @@ export default function WeightTrackingScreen() {
               style={{ textAlign: "center", textAlignVertical: "center" }}
               className={`w-36 h-10 px-6 rounded-lg text-center border text-base font-semibold ${darkMode ? "bg-[#2b2b2b] text-white border-gray-600" : "bg-white text-black border-gray-300"}`}
             />
-            <TouchableOpacity className="rounded-lg bg-orange-500 p-2" onPress={() => setUnit(unit === WeightUnit.KG ? WeightUnit.LB : WeightUnit.KG)}>
-              <Text
-                className={`text-sm font-semibold text-white`}
-              >
+            <TouchableOpacity
+              className="rounded-lg bg-orange-500 p-2"
+              onPress={() =>
+                setUnit(unit === WeightUnit.KG ? WeightUnit.LB : WeightUnit.KG)
+              }
+            >
+              <Text className={`text-sm font-semibold text-white`}>
                 {unit === WeightUnit.KG ? "KG" : "LB"}
               </Text>
             </TouchableOpacity>
@@ -530,7 +567,7 @@ export default function WeightTrackingScreen() {
                   setChartTab(tab.id);
                   // Reset the chart data when switching tabs
                   setLogs(
-                    weightLogs.filter(
+                    logs.filter(
                       (log) => log.log_date.getMonth() === new Date().getMonth()
                     )
                   );
@@ -684,16 +721,20 @@ export default function WeightTrackingScreen() {
                     <View className="flex-row gap-6 mr-3">
                       {editIndex === log.id ? (
                         <TouchableOpacity
-                          onPress={() => {
+                          onPress={async() => {
                             const updatedLogs = [...logs];
-                            updatedLogs[log.id-1] = {
-                              ...updatedLogs[log.id-1],
+                            updatedLogs[log.id - 1] = {
+                              ...updatedLogs[log.id - 1],
                               weight: editLog || 0,
                             };
                             setLogs(updatedLogs);
                             console.log("Updated log:", updatedLogs);
                             setEditIndex(null);
                             setEditLog(undefined);
+                            await AsyncStorage.setItem(
+                              "weightData",
+                              JSON.stringify(updatedLogs)
+                            );
                           }}
                           className="bg-green-500 p-2 flex-row items-center justify-center rounded-full"
                         >

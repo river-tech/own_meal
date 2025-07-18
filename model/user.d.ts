@@ -1,8 +1,5 @@
-export enum EUserGoal {
-  WEIGHT_LOSS = "Weight Loss",
-  WEIGHT_GAIN = "Weight Gain",
-  MAINTAIN_WEIGHT = "Maintain Weight",
-}
+import { EUserGoal } from "app/Profile/Personal";
+
 
 export enum EUserDietType {
   Custom = "Custom",
@@ -20,4 +17,42 @@ export interface IUser {
   name: string;
   avatar_url: string;
   notification_enable: string;
+}
+
+export interface Imacros {
+  height: number;
+  height_unit: string;
+  weight: number;
+  weight_unit: string;
+ 
+  gender: string;
+
+  goal: EUserGoal;
+
+  body_fat: number;
+
+  activity_level: number;
+
+  bmi: number;
+
+  bmr: number;
+
+  calories: number;
+}
+
+export interface ImacroDetails {
+  
+  diet_type : EUserDietType;
+  carb_percent: number;
+  protein_percent: number;
+  fat_percent: number;
+  water_target_ml: number;
+  meal_number: number;
+  meals : IMealDefine[];
+}
+
+export interface IMealDefine {
+  meal_name : string;
+  meal_time: string;
+  percent_calories: number;
 }

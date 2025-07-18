@@ -20,44 +20,89 @@ import {
   faVenus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
+import { Imacros } from "model/user";
 
-const enum EUserGoal {
+export enum EUserGoal {
   WEIGHT_LOSS = "Weight Loss",
   WEIGHT_GAIN = "Weight Gain",
   MAINTAIN_WEIGHT = "Maintain Weight",
 }
 
 export default function PersonalInformationScreen() {
+  const activityOptions = [
+    { label: "Sedentary", value: 1.2 },
+    { label: "Lightly Active", value: 1.375 },
+    { label: "Moderately Active", value: 1.55 },
+    { label: "Very Active", value: 1.725 },
+    { label: "Extra Active", value: 1.9 },
+  ];
+
   const router = useRouter();
   const darkMode = useColorScheme() === "dark";
-
-  const [height, setHeight] = useState("");
-  const [weight, setWeight] = useState("");
-  const [gender, setGender] = useState("Male");
+  const apiUrl = process.env.API_URL;
+  const [height, setHeight] = useState(0);
+  const [weight, setWeight] = useState(0);
+  const [gender, setGender] = useState<string>("Male");
   const [goal, setGoal] = useState<EUserGoal>(EUserGoal.MAINTAIN_WEIGHT);
-  const [heightUnit, setHeightUnit] = useState("cm");
-  const [weightUnit, setWeightUnit] = useState("kg");
+  const [heightUnit, setHeightUnit] = useState<string>("Cm");
+  const [weightUnit, setWeightUnit] = useState<string>("Kg");
   const [unitModalVisible, setUnitModalVisible] = useState(false);
   const [unitType, setUnitType] = useState<"height" | "weight" | null>(null);
   const [isGoalModalVisible, setIsGoalModalVisible] = useState(false);
   const [bmr, setBMR] = useState(0);
   const [bmi, setBMI] = useState(0);
   const [calorieAdjustment, setCalorieAdjustment] = useState(0);
-  const [activity, setActivity] = useState<{ label: string; value: string }>({
+  const [activity, setActivity] = useState<{ label: string; value: number }>({
     label: "Select",
-    value: "",
+    value: 0,
   });
+  const [change, setChange] = useState(false);
   const [activityLevel, setActivityLevel] = useState(1.2); // Default to Sedentary
   const [isVisibleMore, setIsVisibleMore] = useState(false);
-  const [age, setAge] = useState("25"); // mặc định hợp lý
-
+  const [age, setAge] = useState(25); // mặc định hợp lý
   const [bodyfat, setBodyfat] = useState(20);
   const [isActivityModalVisible, setIsActivityModalVisible] = useState(false);
-
   const inputStyle = `flex-1 mr-2 px-4 py-2 rounded-lg ${darkMode ? "bg-[#2b2b2b] text-white" : "bg-white text-black"}`;
   const labelStyle = `font-semibold ${darkMode ? "text-white" : "text-black"}`;
   const boxStyle = `rounded-lg border border-gray-400 items-center justify-center ${darkMode ? "bg-[#444]" : "bg-white"}`;
 
+  const getMacros = async () => {
+    const macros = await SecureStore.getItemAsync("macros");
+    if (!macros) {
+      try {
+        const res = await axios.get(`${apiUrl}/users/view/personal`);
+        if (res) {
+          const macrosData: Imacros = res.data;
+          await SecureStore.setItemAsync("macros", JSON.stringify(macrosData));
+        }
+      } catch (error) {
+        console.error("Error fetching macros:", error);
+      }
+    } else {
+      const macrosData: Imacros = JSON.parse(macros);
+      console.log("Fetched Macros:", macrosData);
+      setGender(macrosData.gender);
+      setHeight(macrosData.height);
+      setWeight(macrosData.weight);
+      setHeightUnit(macrosData.height_unit);
+      setWeightUnit(macrosData.weight_unit);
+      setGoal(macrosData.goal as unknown as EUserGoal);
+      setBodyfat(macrosData.body_fat);
+      const found = activityOptions.find(
+        (opt) => opt.value === macrosData.activity_level
+      );
+      setActivity({
+        label: found?.label ?? "Select",
+        value: macrosData.activity_level,
+      });
+      setCalorieAdjustment(macrosData.calories);
+    }
+  };
+  useEffect(() => {
+    getMacros();
+  }, []);
 
   const renderUnitModal = () => (
     <Modal
@@ -73,7 +118,7 @@ export default function PersonalInformationScreen() {
           <Text className={`text-lg font-semibold mb-4 ${labelStyle}`}>
             Select Unit
           </Text>
-          {(unitType === "height" ? ["cm", "ft"] : ["kg", "lb"]).map((u) => (
+          {(unitType === "height" ? ["Cm", "Ft"] : ["Kg", "Lbs"]).map((u) => (
             <TouchableOpacity
               key={u}
               onPress={() => {
@@ -146,37 +191,74 @@ export default function PersonalInformationScreen() {
   );
 
   useEffect(() => {
-  const rawWeight = parseFloat(weight);
-  const rawHeight = parseFloat(height);
-  const a = parseInt(age);
+    if (change) {
+    }
+    const rawWeight = weight;
+    const rawHeight = height;
+    const a = age;
 
-  if (!rawWeight || !rawHeight || !a) return;
+    if (!rawWeight || !rawHeight || !a) return;
 
-  // Chuyển đổi đơn vị sang kg và cm
-  const w = weightUnit === "lb" ? rawWeight * 0.453592 : rawWeight;
-  const h = heightUnit === "ft" ? rawHeight * 30.48 : rawHeight;
+    // Chuyển đổi đơn vị sang kg và cm
+    const w = weightUnit === "Lbs" ? rawWeight * 0.453592 : rawWeight;
+    const h = heightUnit === "Ft" ? rawHeight * 30.48 : rawHeight;
 
-  let bmrCalc = 0;
+    let bmrCalc = 0;
 
-  if (gender === "Male") {
-    bmrCalc = 88.362 + 13.397 * w + 4.799 * h - 5.677 * a;
-  } else {
-    bmrCalc = 447.593 + 9.247 * w + 3.098 * h - 4.33 * a;
-  }
+    if (gender === "Male") {
+      bmrCalc = 88.362 + 13.397 * w + 4.799 * h - 5.677 * a;
+    } else {
+      bmrCalc = 447.593 + 9.247 * w + 3.098 * h - 4.33 * a;
+    }
 
-  const heightInM = h / 100;
-  const bmiCalc = w / (heightInM * heightInM);
+    const heightInM = h / 100;
+    const bmiCalc = w / (heightInM * heightInM);
 
-  let calorieAdj = 0;
-  if (goal === EUserGoal.WEIGHT_GAIN) calorieAdj = 500;
-  else if (goal === EUserGoal.WEIGHT_LOSS) calorieAdj = -500;
+    let calorieAdj = 0;
+    if (goal === EUserGoal.WEIGHT_GAIN) calorieAdj = 250;
+    else if (goal === EUserGoal.WEIGHT_LOSS) calorieAdj = -250;
 
-  const tdee = bmrCalc * activityLevel + calorieAdj;
+    const tdee = bmrCalc * activityLevel + calorieAdj;
 
-  setBMR(Math.round(bmrCalc)); // BMR gốc
-  setBMI(parseFloat(bmiCalc.toFixed(1))); // chỉ 1 chữ số thập phân
-  setCalorieAdjustment(Math.round(tdee)); // tổng calo cần mỗi ngày
-}, [height, weight, age, gender, goal, activityLevel, weightUnit, heightUnit]);
+    setBMR(Math.round(bmrCalc)); // BMR gốc
+    setBMI(parseFloat(bmiCalc.toFixed(1))); // chỉ 1 chữ số thập phân
+    if (change) {
+      setCalorieAdjustment(Math.round(tdee)); // tổng calo cần mỗi ngày
+    }
+    setChange(true);
+  }, [
+    height,
+    weight,
+    age,
+    gender,
+    goal,
+    activityLevel,
+    weightUnit,
+    heightUnit,
+  ]);
+
+  const handleSaveChanges = async () => {
+    const macrosData: Imacros = {
+      height: height, // number
+      height_unit: heightUnit, // "Cm" | "Ft"
+      weight: weight, // number
+      weight_unit: weightUnit, // "Kg" | "Lbs"
+      gender: gender, // "Male" | "Female"
+      goal: goal, // "GainWeight" | "MaintainWeight" | "LoseWeight"
+      body_fat: bodyfat, // number
+      activity_level: activity.value, // number
+      bmi: bmi, // number
+      bmr: bmr, // number
+      calories: calorieAdjustment, // number
+    };
+
+    try {
+      console.log("Saving macros data:", macrosData);
+      await SecureStore.setItemAsync("macros", JSON.stringify(macrosData));
+    } catch (e) {
+      console.error("Error saving macros data:", e);
+    }
+  };
 
   const renderActivityModal = () => (
     <Modal
@@ -192,19 +274,13 @@ export default function PersonalInformationScreen() {
           <Text className={`text-lg font-semibold mb-4 ${labelStyle}`}>
             Select Activity Level
           </Text>
-          {[
-            { label: "Sedentary", value: "1.2" },
-            { label: "Lightly Active", value: "1.375" },
-            { label: "Moderately Active", value: "1.55" },
-            { label: "Very Active", value: "1.725" },
-            { label: "Extra Active", value: "1.9" },
-          ].map((activityOption) => (
+          {activityOptions.map((activityOption) => (
             <TouchableOpacity
               key={activityOption.value}
               onPress={() => {
                 setActivity(activityOption);
                 setIsActivityModalVisible(false);
-                setActivityLevel(parseFloat(activityOption.value));
+                setActivityLevel(activityOption.value);
               }}
               className="py-3 px-4 rounded-lg mb-2 bg-orange-500"
             >
@@ -278,8 +354,8 @@ export default function PersonalInformationScreen() {
                 {label}
               </Text>
               <TextInput
-                value={value}
-                onChangeText={setter}
+                value={value.toString()}
+                onChangeText={(text) => setter(parseFloat(text) || 0)}
                 placeholder={`Enter your ${label.toLowerCase()}`}
                 placeholderTextColor={darkMode ? "#aaa" : "#888"}
                 keyboardType="numeric"
@@ -450,7 +526,10 @@ export default function PersonalInformationScreen() {
           {/* Save */}
           <View className="flex-col gap-5 items-end mt-6">
             {/* Macros Settings với underline và mũi tên */}
-            <TouchableOpacity onPress={()=>router.push("/Profile/Personal/MacroSetting")} className="flex-row justify-center items-center">
+            <TouchableOpacity
+              onPress={() => router.push("/Profile/Personal/MacroSetting")}
+              className="flex-row justify-center items-center"
+            >
               <Text
                 className={`text-lg font-semibold  ${darkMode ? "text-white" : "text-black"}`}
               >
@@ -465,7 +544,10 @@ export default function PersonalInformationScreen() {
             </TouchableOpacity>
 
             {/* Save Button */}
-            <TouchableOpacity className="bg-orange-500 py-2 px-10 rounded-xl border-2 border-white shadow-lg shadow-black/30">
+            <TouchableOpacity
+              onPress={() => handleSaveChanges()}
+              className="bg-orange-500 py-2 px-10 rounded-xl border-2 border-white shadow-lg shadow-black/30"
+            >
               <Text className="text-white font-bold text-lg">Save</Text>
             </TouchableOpacity>
           </View>

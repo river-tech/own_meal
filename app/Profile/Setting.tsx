@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -25,25 +25,84 @@ import {
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
+import { IUser } from "model/user";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 const CLOUD_NAME = "dqupovatf"; // ví dụ: "myapp123"
 const UPLOAD_PRESET = "demo_frame_print"; // ví dụ: "expo_upload"
 
+const exampleUser: IUser = {
+  id: 1,
+  username: "johndoe",
+  email: "johndoe@example.com",
+  name: "John Doe",
+  avatar_url: "https://example.com/avatars/johndoe.png",
+  notification_enable: "true", // hoặc "false"
+};
+
+const setup= async()=>{
+  await SecureStore.setItemAsync("store", JSON.stringify(exampleUser));
+}
+
 export default function SettingsScreen() {
   const isDark = useColorScheme() === "dark";
-  const [name, setName] = useState("");
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
- 
-
+  const [userInfo, setUserInfo] = useState<IUser | null>(null);
   const textColor = isDark ? "text-white" : "text-black";
   const bgColor = isDark ? "bg-[#1e1e1e]" : "bg-[#fff4e6]";
   const cardBg = isDark ? "bg-[#2c2c2e]" : "bg-[#fff]";
   const router = useRouter();
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const [name, setName] = useState("");
 
-  const email = "ahmobile17022005@gmail.com"
   
 
   const [avatar, setAvatar] = useState("");
   const [isEditName, setIsEditName] = useState(false);
+  useEffect(() => {
+   const getUserInfo = async () => {
+      const userInfo = await SecureStore.getItemAsync("store");
+      if (userInfo) {
+        const parsedUserInfo: IUser = JSON.parse(userInfo);
+        setUserInfo(parsedUserInfo);
+        setName(parsedUserInfo.name);
+        setAvatar(parsedUserInfo.avatar_url || ""); // Set avatar from user info
+        setNotificationEnabled(parsedUserInfo.notification_enable === "true");
+      }
+   }
+    getUserInfo();
+    setup();
+  },[])
+
+  const handleSaveChanges = async () => {
+    if (userInfo) {
+      const updatedUser: IUser = {
+        ...userInfo,
+        name: name,
+        avatar_url: avatar,
+        notification_enable: notificationEnabled ? "true" : "false",
+      };
+      setUserInfo(updatedUser);
+      await SecureStore.setItemAsync("store", JSON.stringify(updatedUser));
+      setIsEditName(false); // Đóng chế độ chỉnh sửa tên
+    }
+    try {
+      //call api to update user info
+    } catch (error) {
+      
+    }
+  }
+
+  const handleBackPress = () => {
+    handleSaveChanges();
+    router.push("/dashboard/Home");
+
+    
+  }
+
+  const handleChangePassword = () => {
+    handleSaveChanges();
+    router.push(`/OwnSecure/OtpCheck?email=${userInfo?.email}`)
+  }
+ 
   
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
@@ -53,8 +112,6 @@ export default function SettingsScreen() {
       aspect: [4, 3],
       quality: 1,
     });
-
-    console.log(result);
 
     if (!result.canceled) {
       setAvatar(result.assets[0].uri);
@@ -97,6 +154,7 @@ export default function SettingsScreen() {
     } 
   };
 
+
   const CustomToggle = ({
     value,
     onToggle,
@@ -121,6 +179,8 @@ export default function SettingsScreen() {
   const signOut = async () => {
     // Handle sign up logic here
     await SecureStore.deleteItemAsync("userToken");
+    await SecureStore.deleteItemAsync("store");
+    setUserInfo(null);
     router.push("/");
   };
 
@@ -131,7 +191,7 @@ export default function SettingsScreen() {
         {/* backbutton */}
         <View className="absolute top-16 left-4 z-50">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => handleBackPress()}
             className="w-10 h-10 rounded-full border-2 border-white items-center justify-center"
           >
             <FontAwesomeIcon icon={faArrowLeft} color={"#FFF"} size={20} />
@@ -155,8 +215,8 @@ export default function SettingsScreen() {
           {isEditName ? (
             <View className="flex-row items-center justify-center mt-2 w-full">
               <TextInput
-                value={name}
-                onChangeText={setName}
+                value={name || ""}
+                onChangeText={(text) => setName(text)}
                 className={`text-xl font-semibold flex-1 border-b border-gray-300 ${textColor}`}
                 placeholder="Your Name"
                 placeholderTextColor={isDark ? "#ccc" : "#888"}
@@ -203,7 +263,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={()=>router.push(`/OwnSecure/OtpCheck?email=${email}`)} className="flex-row gap-3 items-center mb-6">
+        <TouchableOpacity onPress={()=>handleChangePassword()} className="flex-row gap-3 items-center mb-6">
           <FontAwesomeIcon icon={faKey} color="#FF7A00" />
           <Text className={textColor}>Change Password</Text>
         </TouchableOpacity>

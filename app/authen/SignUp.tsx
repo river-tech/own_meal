@@ -41,23 +41,20 @@ const SignUp = () => {
     }
     // Giả sử đăng ký thành công
     setError(false);
+    setErrorText("");
     try {
-      const res =  await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/signup`, {
-        Email: email,
-        Username: username,
-        Password: password,
-      }); // Gọi API đăng ký
-      if(res){
+      const res = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/auth/get-otp?email=${email}`
+      ); // Gọi API đăng ký
+      if (res) {
         console.log("Đăng ký thành công:", res.data);
-        setError(false);
-        setErrorText("");
-        router.push(`/OwnSecure/OtpCheck?email=${email}`); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
+        router.push(`/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
       }
     } catch (error) {
       // console.error('Error during sign up:', error);
       setError(true);
       setErrorText("An error occurred during sign up. Please try again.");
-        router.push(`/OwnSecure/OtpCheck?email=${email}`);
+      router.push(`/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
       return;
     }
   };
@@ -168,15 +165,13 @@ const SignUp = () => {
               value={confirmPassword}
               onChangeText={(text) => setConfirmPassword(text)}
             />
-            {
-              error && (
-                <Text
-                  className={`text-red-500 text-sm mb-4 ${colorScheme === "dark" ? "text-red-400" : "text-red-600"}`}
-                >
-                  {errorText}
-                </Text>
-              )
-            }
+            {error && (
+              <Text
+                className={`text-red-500 text-sm mb-4 ${colorScheme === "dark" ? "text-red-400" : "text-red-600"}`}
+              >
+                {errorText}
+              </Text>
+            )}
 
             {/* Agree With Term checkbox */}
             <View className="flex-row items-center mb-6">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,9 @@ import {
   // ... các import còn lại
 } from "react-native";
 // import { EUserDietType } from "model/user";
+import * as SecureStore from "expo-secure-store";
+import { ImacroDetails, Imacros, IMealDefine } from "model/user";
+import { IMeal } from "model/meal";
 
 enum EUserDietType {
   Custom = "Custom",
@@ -50,12 +53,11 @@ export default function MacroSettingsScreen() {
   );
   const darkMode = useColorScheme() === "dark";
   const router = useRouter();
-
   const [calorieTotal, setCalorieTotal] = useState(2000);
-  const [carbPercent, setCarbPercent] = useState("30");
-  const [proteinPercent, setProteinPercent] = useState("46");
-  const [fatPercent, setFatPercent] = useState("24");
-  const [water, setWater] = useState("2.0"); // lít
+  const [carbPercent, setCarbPercent] = useState(30);
+  const [proteinPercent, setProteinPercent] = useState(46);
+  const [fatPercent, setFatPercent] = useState(24);
+  const [water, setWater] = useState(2.0); // lít
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [dietType, setDietType] = useState<EUserDietType>(
@@ -63,11 +65,12 @@ export default function MacroSettingsScreen() {
   );
   const [isVisibleDietType, setIsVisibleDietType] = useState(true);
   const [mealNumber, setMealNumber] = useState(3); // Số lượng bữa ăn
+  const labelStyle = `${darkMode ? "text-white" : "text-black"}`;
 
-  const [meals, setMeals] = useState([
-    { name: "Meal 1", time: "7:00 AM", percent: 40 },
-    { name: "Meal 2", time: "12:00 PM", percent: 35 },
-    { name: "Meal 3", time: "7:00 PM", percent: 25 },
+  const [meals, setMeals] = useState<IMealDefine[]>([
+    { meal_name: "Meal 1", meal_time: "7:00 AM", percent_calories: 40 },
+    { meal_name: "Meal 2", meal_time: "12:00 PM", percent_calories: 35 },
+    { meal_name: "Meal 3", meal_time: "7:00 PM", percent_calories: 25 },
   ]);
 
   const [macroIndex, setMacroIndex] = useState([
@@ -76,11 +79,52 @@ export default function MacroSettingsScreen() {
     { name: "Fat", gram: 70, calories: 630, color: "#FFA500" },
   ]);
 
-  const labelStyle = `${darkMode ? "text-white" : "text-black"}`;
-  const updateMacros = (carb: string, protein: string, fat: string) => {
-    const c = parseFloat(carb);
-    const p = parseFloat(protein);
-    const f = parseFloat(fat);
+  const getMacros = async () => {
+    const macrosStr = await SecureStore.getItemAsync("macros");
+    if (macrosStr) {
+      const macros: Imacros = JSON.parse(macrosStr);
+      setCalorieTotal(macros.calories);
+    }
+    const macrosData = await SecureStore.getItemAsync("macroDetails");
+    if (macrosData) {
+      const parsedMacros: ImacroDetails = JSON.parse(macrosData);
+      console.log("Parsed Macros:", parsedMacros);
+      setCarbPercent(parsedMacros.carb_percent);
+      setProteinPercent(parsedMacros.protein_percent);
+      setFatPercent(parsedMacros.fat_percent);
+      setMealNumber(parsedMacros.meal_number);
+      updateMacros(
+        parsedMacros.carb_percent,
+        parsedMacros.protein_percent,
+        parsedMacros.fat_percent
+      );
+      setDietType(parsedMacros.diet_type);
+      setWater(parsedMacros.water_target_ml);
+      setMeals(
+        parsedMacros.meals.map((meal) => ({
+          meal_name: meal.meal_name,
+          meal_time: meal.meal_time,
+          percent_calories: meal.percent_calories,
+        }))
+      );
+    }
+    else{
+      //call api to get macros
+      try {
+        
+      } catch (error) {
+        
+      }
+    }
+  };
+  useEffect(() => {
+    getMacros();
+  }, []);
+
+  const updateMacros = (carb: number, protein: number, fat: number) => {
+    const c = carb;
+    const p = protein;
+    const f = fat;
 
     const carbCal = (c / 100) * calorieTotal;
     const proteinCal = (p / 100) * calorieTotal;
@@ -107,22 +151,20 @@ export default function MacroSettingsScreen() {
       },
     ]);
   };
+
   useEffect(() => {
-    if (meals.map((m) => m.percent).reduce((a, b) => a + b, 0) !== 100) {
+    if (
+      meals.map((m) => m.percent_calories).reduce((a, b) => a + b, 0) !== 100
+    ) {
       setIsError(true);
       setErrorMessage("Tổng phần trăm của các bữa ăn phải bằng 100%");
+    }
+    if (carbPercent + proteinPercent + fatPercent !== 100) {
+      setIsError(true);
+      setErrorMessage("Tổng tỷ lệ phần trăm macro phải bằng 100%");
     } else {
       setIsError(false);
       setErrorMessage("");
-    }
-    if (
-      parseFloat(carbPercent) +
-        parseFloat(proteinPercent) +
-        parseFloat(fatPercent) !==
-      100
-    ) {
-      setIsError(true);
-      setErrorMessage("Tổng phần trăm macro phải bằng 100%");
     }
   }, [meals, carbPercent, proteinPercent, fatPercent]);
 
@@ -146,10 +188,33 @@ export default function MacroSettingsScreen() {
   const handleConfirmTime = (date: Date) => {
     if (selectedMealIndex !== null) {
       const updatedMeals = [...meals];
-      updatedMeals[selectedMealIndex].time = moment(date).format("h:mm A");
+      updatedMeals[selectedMealIndex].meal_time = moment(date).format("h:mm A");
       setMeals(updatedMeals);
     }
     hideTimePicker();
+  };
+
+  const handleSaveChanges = async () => {
+    const macrosDetails: ImacroDetails = {
+      diet_type: dietType,
+      protein_percent: proteinPercent,
+      fat_percent: fatPercent,
+      carb_percent: carbPercent,
+      water_target_ml: water,
+      meal_number: mealNumber,
+      meals: meals.map((meal: IMealDefine) => ({
+        meal_name: meal.meal_name,
+        meal_time: meal.meal_time,
+        percent_calories: meal.percent_calories,
+      })),
+    };
+    if (!isError) {
+      await SecureStore.setItemAsync(
+        "macroDetails",
+        JSON.stringify(macrosDetails)
+      );
+    }
+    console.log("Macros Details to Save:", macrosDetails);
   };
 
   const modalDietType = () => (
@@ -167,34 +232,34 @@ export default function MacroSettingsScreen() {
               // Nếu không phải Custom, cập nhật giá trị macro %
               switch (type) {
                 case EUserDietType.Balanced:
-                  setCarbPercent("50");
-                  setFatPercent("30");
-                  setProteinPercent("20");
-                  updateMacros("50", "20", "30");
+                  setCarbPercent(50);
+                  setFatPercent(30);
+                  setProteinPercent(20);
+                  updateMacros(50, 20, 30);
                   break;
                 case EUserDietType.HighProtein:
-                  setCarbPercent("40");
-                  setFatPercent("30");
-                  setProteinPercent("30");
-                  updateMacros("40", "30", "30");
+                  setCarbPercent(40);
+                  setFatPercent(30);
+                  setProteinPercent(30);
+                  updateMacros(40, 30, 30);
                   break;
                 case EUserDietType.LowCarb:
-                  setCarbPercent("25");
-                  setFatPercent("35");
-                  setProteinPercent("40");
-                  updateMacros("25", "40", "35");
+                  setCarbPercent(25);
+                  setFatPercent(35);
+                  setProteinPercent(40);
+                  updateMacros(25, 40, 35);
                   break;
                 case EUserDietType.LowFat:
-                  setCarbPercent("60");
-                  setFatPercent("15");
-                  setProteinPercent("25");
-                  updateMacros("60", "25", "15");
+                  setCarbPercent(60);
+                  setFatPercent(15);
+                  setProteinPercent(25);
+                  updateMacros(60, 25, 15);
                   break;
                 case EUserDietType.HighCarb:
-                  setCarbPercent("65");
-                  setFatPercent("20");
-                  setProteinPercent("15");
-                  updateMacros("65", "15", "20");
+                  setCarbPercent(65);
+                  setFatPercent(20);
+                  setProteinPercent(15);
+                  updateMacros(65, 15, 20);
                   break;
                 default:
                   break;
@@ -220,14 +285,14 @@ export default function MacroSettingsScreen() {
 
   const renderPercentInput = (
     placeholder: string,
-    value: string,
-    setValue: (v: string) => void,
+    value: number,
+    setValue: (v: number) => void,
     color?: string
   ) => (
     <TextInput
       keyboardType="numeric"
-      value={value}
-      onChangeText={setValue}
+      value={value.toString()}
+      onChangeText={(text) => setValue(Number(text))}
       placeholder={placeholder}
       className={`
       w-[30%] text-center rounded-lg px-3 py-2 border
@@ -270,10 +335,7 @@ export default function MacroSettingsScreen() {
               <Text className="text-xl font-bold text-black">
                 {calorieTotal}
               </Text>
-              <Text className="text-xl font-bold text-gray-400">
-                {" "}
-                / {calorieTotal}
-              </Text>
+
               <Text className="text-xl font-bold text-orange-500 ml-1 mr-2">
                 {" "}
                 kcal
@@ -285,34 +347,40 @@ export default function MacroSettingsScreen() {
           </View>
 
           {/* Tỷ lệ phần trăm */}
-          <View className="flex-row w-full overflow-hidden border border-white rounded-xl mt-4">
-            {[
-              {
-                percent: carbPercent,
-                color: "#FFA500",
-                rounded: "rounded-l-xl",
-              }, // Carb
-              { percent: proteinPercent, color: "#B22222", rounded: "" }, // Protein
-              {
-                percent: fatPercent,
-                color: "#FFCC99",
-                rounded: "rounded-r-xl",
-              }, // Fat
-            ].map(({ percent, color, rounded }, idx) => (
-              <View
-                key={idx}
-                className={`py-3 items-center justify-center ${rounded}`}
-                style={{
-                  backgroundColor: color,
-                  width: `${percent}%` as unknown as number,
-                }}
-              >
-                <Text className="text-white text-base font-semibold">
-                  {percent} %
-                </Text>
-              </View>
-            ))}
-          </View>
+          {carbPercent + proteinPercent + fatPercent !== 100 ? (
+            <Text className="text-red-500 text-center mx-auto text-sm">
+              Tổng tỷ lệ phần trăm phải bằng 100%
+            </Text>
+          ) : (
+            <View className="flex-row w-full overflow-hidden border border-white rounded-xl mt-4">
+              {[
+                {
+                  percent: carbPercent,
+                  color: "#FFA500",
+                  rounded: "rounded-l-xl",
+                }, // Carb
+                { percent: proteinPercent, color: "#B22222", rounded: "" }, // Protein
+                {
+                  percent: fatPercent,
+                  color: "#FFCC99",
+                  rounded: "rounded-r-xl",
+                }, // Fat
+              ].map(({ percent, color, rounded }, idx) => (
+                <View
+                  key={idx}
+                  className={`py-3 items-center justify-center ${rounded}`}
+                  style={{
+                    backgroundColor: color,
+                    width: `${percent}%` as unknown as number,
+                  }}
+                >
+                  <Text className="text-white text-base font-semibold">
+                    {percent} %
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Carb - Protein - Fat */}
           <View className="flex-row justify-between px-2 bg-white rounded-lg py-4 mt-2 shadow-lg">
@@ -381,8 +449,8 @@ export default function MacroSettingsScreen() {
             <View className="flex-row items-center gap-2">
               <TextInput
                 keyboardType="numeric"
-                value={water}
-                onChangeText={setWater}
+                value={water.toString()}
+                onChangeText={(text) => setWater(Number(text))}
                 placeholder="0.0"
                 className={`w-20 h-10 px-3 rounded-lg text-center border ${
                   darkMode
@@ -418,8 +486,9 @@ export default function MacroSettingsScreen() {
                         .map((meal, index) => ({
                           ...meal,
                           name: `Meal ${index + 1}`,
-                          percent: distributedPercents[index],
+                          percent_calories: distributedPercents[index],
                         }));
+                      console.log("Updated Meals:", updatedMeals);
                       setMeals(updatedMeals);
                     }
                   }}
@@ -430,7 +499,7 @@ export default function MacroSettingsScreen() {
 
                 <TextInput
                   keyboardType="numeric"
-                  value={mealNumber.toString()}
+                  value={mealNumber.toString() || ""}
                   onChangeText={(text) => {
                     const num = parseInt(text);
                     if (!text || isNaN(num) || num <= 0) {
@@ -441,9 +510,9 @@ export default function MacroSettingsScreen() {
 
                     setMealNumber(num);
                     const updatedMeals = [...Array(num)].map((_, index) => ({
-                      name: `Meal ${index + 1}`,
-                      time: meals[index]?.time || "",
-                      percent: Math.round(100 / num),
+                      meal_name: `Meal ${index + 1}`,
+                      meal_time: meals[index]?.meal_time || "",
+                      percent_calories: Math.round(100 / num),
                     }));
                     setMeals(updatedMeals);
                   }}
@@ -462,9 +531,9 @@ export default function MacroSettingsScreen() {
                       distributePercentEvenly(newNumber);
                     const updatedMeals = [...Array(newNumber)].map(
                       (_, index) => ({
-                        name: `Meal ${index + 1}`,
-                        time: meals[index]?.time || "",
-                        percent: distributedPercents[index],
+                        meal_name: `Meal ${index + 1}`,
+                        meal_time: meals[index]?.meal_time || "",
+                        percent_calories: distributedPercents[index],
                       })
                     );
                     setMeals(updatedMeals);
@@ -502,10 +571,10 @@ export default function MacroSettingsScreen() {
                 {/* Input tên bữa ăn */}
                 <View className=" ml-2 flex-row items-center flex-1   gap-2">
                   <TextInput
-                    value={meal.name}
+                    value={meal.meal_name}
                     onChangeText={(text) => {
                       const newMeals = [...meals];
-                      newMeals[idx].name = text;
+                      newMeals[idx].meal_name = text;
                       setMeals(newMeals);
                     }}
                     placeholder="Meal name"
@@ -519,11 +588,11 @@ export default function MacroSettingsScreen() {
                   {/* Input % */}
                   <View className="flex-row items-center gap-[3px]">
                     <TextInput
-                      value={meal.percent?.toString() || ""}
+                      value={meal.percent_calories?.toString() || ""}
                       onChangeText={(text) => {
                         const newMeals = [...meals];
                         const val = parseFloat(text);
-                        newMeals[idx].percent = isNaN(val) ? 0 : val;
+                        newMeals[idx].percent_calories = isNaN(val) ? 0 : val;
                         setMeals(newMeals);
                       }}
                       placeholder="%"
@@ -546,7 +615,7 @@ export default function MacroSettingsScreen() {
                 <Text
                   className={`ml-2 text-xs ${darkMode ? "text-white" : "text-black"}`}
                 >
-                  {meal.time || "7:00 AM"}
+                  {meal.meal_time || "7:00 AM"}
                 </Text>
 
                 {/* Nút chọn thời gian */}
@@ -572,7 +641,10 @@ export default function MacroSettingsScreen() {
             </View>
           )}
           {/* Save */}
-          <TouchableOpacity className="bg-orange-500 mb-10 py-3 rounded-xl items-center mt-2">
+          <TouchableOpacity
+            onPress={() => handleSaveChanges()}
+            className="bg-orange-500 mb-10 py-3 rounded-xl items-center mt-2"
+          >
             <Text className="text-white font-bold text-lg">Save</Text>
           </TouchableOpacity>
 

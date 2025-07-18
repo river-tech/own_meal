@@ -9,8 +9,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { useRouter, SearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useSearchParams } from "expo-router/build/hooks";
+import axios from "axios";
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -19,7 +20,11 @@ const VerifyOTP = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
-  
+  const username = searchParams.get("username");
+  const isSignUp = searchParams.get("isSignUp");
+  const password = searchParams.get("password") ;
+
+
 
   useEffect(() => {
     // Thiết lập bộ đếm ngược
@@ -31,10 +36,17 @@ const VerifyOTP = () => {
         }
         return prev - 1;
       });
+   
     }, 1000);
 
     // Dọn dẹp bộ đếm khi component unmount
+       console.log("Time left:", timeLeft);
+      console.log("username:", username);
+      console.log("email:", email);
+      console.log("isSignUp:", isSignUp);
+      console.log("password:", password);
     return () => clearInterval(timer);
+    
   }, []);
 
   // Sử dụng useRef để tham chiếu tới các TextInput
@@ -62,6 +74,42 @@ const VerifyOTP = () => {
       inputRefs.current[index - 1]?.focus();
     }
   };
+
+  const handleOTPVerification =  async() => {
+    // Xử lý xác minh OTP ở đây
+    const otpCode = otp.join("");
+    console.log("OTP Code:", otpCode);
+    try {
+      const res = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/verify-otp?email=${email}&otp=${otpCode}`)
+      console.log(`${process.env.EXPO_PUBLIC_API_URL}/auth/verify-otp?email=${email}&otp=${otpCode}`)
+      if(res && isSignUp){
+        try {
+          const res = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`,{
+            email: email,
+            username: username,
+            password: password,
+          })
+          if(res){
+            router.push('/authen/SignIn')
+          }
+        } catch (error) {
+          console.error("", error);
+          // Xử lý lỗi nếu cần
+          return;
+        }
+      }
+      else if(res && !isSignUp){
+        router.push('/OwnSecure/ChangePassword?renew=true')
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      // Xử lý lỗi nếu cần
+      return; 
+    }
+    // Gọi API để xác minh OTP
+    // Nếu thành công, chuyển hướng đến trang đổi mật khẩu hoặc trang chính
+    router.push(`/OwnSecure/ChangePassword?renew=${true}`);
+  }
 
   return (
     <KeyboardAvoidingView
@@ -171,7 +219,7 @@ const VerifyOTP = () => {
             </Text>
 
             {/* Verify Code Button */}
-            <TouchableOpacity onPress={()=>router.push(`/OwnSecure/ChangePassword?renew=${true}`)} className="bg-orange-600 p-4 rounded-lg mb-6 shadow-lg w-full">
+            <TouchableOpacity onPress={()=>handleOTPVerification()} className="bg-orange-600 p-4 rounded-lg mb-6 shadow-lg w-full">
               <Text className="text-white text-center text-lg font-bold">
                 Verify Code
               </Text>

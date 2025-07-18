@@ -92,6 +92,8 @@ const MealList = ({ meals }: { meals: IMealCard[] }) => {
   );
 };
 
+
+
 export default function Home() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -99,7 +101,6 @@ export default function Home() {
   const darkBgColor = "#1E1E1E";
   const router = useRouter();
   const apiUrl = process.env.EXPO_PUBLIC_API_URL
-  const [userInfo, setUserInfo] = React.useState<IUser | null>(null);
   const getUser = async () => {
     const userToken = await SecureStore.getItemAsync("userToken");
     const store = await SecureStore.getItemAsync("store");
@@ -112,8 +113,8 @@ export default function Home() {
        });
        if(res){
           const userData: IUser = res.data;
-          setUserInfo(userData);
           await SecureStore.setItemAsync("store", JSON.stringify(userData)); // Lưu thông tin người dùng vào SecureStore
+        
        }
       } catch (error) {
        
@@ -132,6 +133,8 @@ export default function Home() {
     };
     checkLoginStatus();
      getUser(); 
+   
+     
   },[])
 
   const [date, setDate] = React.useState(new Date()); // State to hold the selected date

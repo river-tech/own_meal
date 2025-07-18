@@ -27,7 +27,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-import { IMeal } from "@/model/meal";
+import { IMeal } from "model/meal";
+
 
 
 const mealData : IMeal[] = [

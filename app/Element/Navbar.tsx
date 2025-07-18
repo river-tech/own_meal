@@ -28,6 +28,7 @@ export default function Navbar() {
         setUserInfo(JSON.parse(userInfo));
       }
     } 
+    getUserInfo();
   },[])
   
 
@@ -41,7 +42,11 @@ export default function Navbar() {
         >
           <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden mr-[10px] z-10 bg-white">
             <Image
-              source={require("../../assets/images/avatar.png")} // Adjusted path
+             source={{
+              uri: userInfo?.avatar_url
+                ? userInfo?.avatar_url
+                : "https://i.pinimg.com/736x/62/74/8d/62748d84867c925f8d21ad7fdb475f7b.jpg",
+            }}
               className="w-full h-full"
               resizeMode="cover"
             />
