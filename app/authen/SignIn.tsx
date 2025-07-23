@@ -34,8 +34,6 @@ const SignIn = () => {
         if (rememberMeStatus === "true") {
           const savedUsername = await SecureStore.getItemAsync("username");
           const savedPassword = await SecureStore.getItemAsync("password");
-          console.log("Saved Username:", savedUsername);
-          console.log("Saved Password:", savedPassword);
           setUsername(savedUsername || "");
           setPassword(savedPassword || "");
           setRememberMe(true);
@@ -43,7 +41,7 @@ const SignIn = () => {
       }
     };
     init();
-  }, [])
+  }, []);
   // Lấy chế độ sáng/tối của hệ thống
   const colorScheme = useColorScheme();
   const router = useRouter();
@@ -51,22 +49,16 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
-
   const handleSignIn = async () => {
-    // Xử lý đăng nhập ở đây
-    console.log("Username:", username);
-    console.log("Password:", password);
-
-    console.log("Remember Me:", rememberMe);
-    console.log("API URL:", apiUrl);
-
     try {
+      console.log("Username:", username);
+      console.log("Password:", password);
+      console.log("apiUrl:", `${apiUrl}/auth/login`);
       const res = await axios.post(`${apiUrl}/auth/login`, {
         username: username,
         password: password,
       });
 
-      console.log("Đăng nhập thành công:");
       // Chuyển hướng đến trang chính hoặc thực hiện hành động khác sau khi đăng nhập thành công
 
       if (res) {
@@ -75,26 +67,27 @@ const SignIn = () => {
           await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
           await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
         }
-        await SecureStore.setItemAsync("userToken", res.data.token); // Lưu token vào SecureStore♫
+        console.log("Login successful");
+        await SecureStore.setItemAsync("userToken", res.data.token); // Lưu token vào SecureStore
+       
+        // console.log(res.data);
         router.push("/dashboard/Home"); // Giả sử bạn muốn chuyển hướng về trang chính♫
       }
     } catch (error) {
       setError(true);
       // setTimeout(() => setError(false), 2000);
+      // console.error("Login failed:", error);
       if (rememberMe) {
         await SecureStore.setItemAsync("rememberMe", "true"); // Lưu trạng thái Remember Me
         await SecureStore.deleteItemAsync("username"); // Xóa tên người dùng đã lưu
         await SecureStore.deleteItemAsync("password"); // Xóa mật khẩu đã lưu
         await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
         await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
-      }
-      else {
+      } else {
         await SecureStore.setItemAsync("rememberMe", "false"); // Xóa trạng thái Remember Me
         await SecureStore.deleteItemAsync("username"); // Xóa tên người dùng đã lưu
         await SecureStore.deleteItemAsync("password"); // Xóa mật khẩu đã lưu
       }
-      await SecureStore.setItemAsync("userToken", "cac"); // Lưu token vào SecureStore♫
-      router.push("/dashboard/Home");
     }
   };
 

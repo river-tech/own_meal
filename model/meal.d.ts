@@ -1,5 +1,6 @@
 export interface IMealCard {
-  mealId: number;
+  id: number;
+  date: string; // YYYY-MM-DD
   mealName: string;
   currentKcal: number;
   targetKcal: number;
@@ -9,6 +10,7 @@ export interface IMealCard {
   targetCarbs: number;
   currentFat: number;
   targetFat: number;
+  foodList?: IFoodItem[]; // Optional list of food items for the meal
 }
 interface IFoodItem {
   id: number;
@@ -20,11 +22,6 @@ interface IFoodItem {
   total: number;
 }
 
-interface IMeal {
-  id: number;
-  mealName: string;
-  foodList: FoodItem[];
-}
 
 export interface IMealSetting {
   mealId: number;
@@ -32,3 +29,5 @@ export interface IMealSetting {
   percentKcal: number;
   time?: string;
 }
+
+

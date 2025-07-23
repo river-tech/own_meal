@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { BellIcon, Cog6ToothIcon } from "react-native-heroicons/outline";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Navbar() {
   const colorScheme = useColorScheme();
@@ -23,11 +24,13 @@ export default function Navbar() {
   const [userInfo, setUserInfo] = React.useState<IUser | null>(null);
   useEffect(() => {
     const getUserInfo = async () => {
-      const userInfo = await SecureStore.getItemAsync("store");
-      if (userInfo) {
-        setUserInfo(JSON.parse(userInfo));
+      const userSetting = await AsyncStorage.getItem("personalSettings");
+      console.log("User Setting:", userSetting);
+      if (userSetting) {
+        setUserInfo(JSON.parse(userSetting) as IUser);
+        console.log("User info:", JSON.parse(userSetting));
       }
-    } 
+    };
     getUserInfo();
   },[])
   
@@ -43,8 +46,8 @@ export default function Navbar() {
           <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden mr-[10px] z-10 bg-white">
             <Image
              source={{
-              uri: userInfo?.avatar_url
-                ? userInfo?.avatar_url
+              uri: userInfo?.avatar
+                ? userInfo?.avatar
                 : "https://i.pinimg.com/736x/62/74/8d/62748d84867c925f8d21ad7fdb475f7b.jpg",
             }}
               className="w-full h-full"
@@ -56,7 +59,7 @@ export default function Navbar() {
           <View
             className={`bg-orange-500 px-5 pl-45 py-1 rounded-full shadow-lg`}
           >
-            <Text className="font-semibold text-white text-lg">{userInfo?.name}</Text>
+            <Text className="font-semibold text-white text-lg">{userInfo?.username}</Text>
           </View>
         </TouchableOpacity>
         {/* Avatar */}

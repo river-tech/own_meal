@@ -3,6 +3,7 @@ import { View, Text, useColorScheme, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faDroplet } from "@fortawesome/free-solid-svg-icons";
+import AnimatedHorizontalBar from "./BarAnimation";
 
 export default function WaterCard({
   currentWater,
@@ -16,7 +17,7 @@ export default function WaterCard({
 
   const currentIntake = currentWater; // L
   const goalIntake = goalWater; // L
-  const percentage = Math.min((currentIntake / goalIntake) * 100, 100);
+  const percentage = goalIntake === 0 ? 0 : (currentIntake / goalIntake) * 100;
 
   const bgColor = isDark ? "#12232E" : "#BFDBFE";
   const progressBackground = isDark ? "#0F172A" : "#EFF6FF";
@@ -40,23 +41,20 @@ export default function WaterCard({
         className="rounded-full w-16 h-16 items-center justify-center mr-4 shadow-md"
         style={{ backgroundColor: iconBgColor }}
       >
-
         <FontAwesomeIcon size={24} color="#22C3E6" icon={faDroplet} />
       </View>
 
       {/* Content */}
-      <View className="flex-1 flex-col justify-end mt-5">
-        <View
-          className="h-4 rounded-full overflow-hidden mb-2"
-          style={{ backgroundColor: progressBackground }}
-        >
-          <LinearGradient
-            colors={["#38BDF8", "#60A5FA", "#BFDBFE"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ width: `${percentage}%`, height: "100%" }}
-          />
-        </View>
+      <View className="flex-1 flex-col justify-end gap-2 mt-5">
+        <AnimatedHorizontalBar
+          width={250} // Full width of the bar
+          height={10}
+          consumed={currentIntake}
+          target={goalIntake}
+          color="#22C3E6"
+          backgroundColor={progressBackground}
+          borderRadius={5}
+        />
 
         <Text className="text-center font-bold text-lg text-black dark:text-white">
           {currentIntake}/

@@ -1,7 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, useColorScheme } from "react-native";
 import Svg, { Circle } from "react-native-svg"; // Import SVG components
 import { FireIcon } from "react-native-heroicons/outline"; // Flame icon
+import Animated, {
+  useSharedValue,
+  useAnimatedProps,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import AnimatedCircularProgress from "./CircleAnimation";
+
+
 
 const CaloriesProgress = ({
   totalCalories,
@@ -14,12 +23,34 @@ const CaloriesProgress = ({
   const isDark = colorScheme === "dark";
 
   // Calculate the percentage of calories consumed
-  const percentage = (consumedCalories / totalCalories) * 100;
+  const animatedStroke = useSharedValue(0);
+  const radius = 15;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    const percent =
+      totalCalories === 0 ? 0 : (consumedCalories / totalCalories) * 100;
+
+    const progressLength = (percent / 100) * circumference;
+
+    // animate lên từ từ
+    animatedStroke.value = withTiming(progressLength, {
+      duration: 1000,
+      easing: Easing.out(Easing.exp),
+    });
+  }, [consumedCalories, totalCalories]);
+
+  // animation props cho strokeDashoffset
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference - animatedStroke.value,
+  }));
 
   return (
     <View
       className={`flex-row justify-between items-center px-4 py-3 mx-auto rounded-xl mb-6 w-[90%] ${
-        isDark ? "bg-[#3B3B3B] border border-[#FF6E6C]" : "bg-white  border border-[#FF6E6C]"
+        isDark
+          ? "bg-[#3B3B3B] border border-[#FF6E6C]"
+          : "bg-white  border border-[#FF6E6C]"
       }`}
     >
       {/* Calories text */}
@@ -42,31 +73,14 @@ const CaloriesProgress = ({
 
       {/* Circular progress (flame icon with percentage) */}
       <View className="relative">
-        <Svg width="50" height="50" viewBox="0 0 36 36">
-        
-          <Circle
-            cx="18"
-            cy="18"
-            r="15"
-            stroke={isDark ? "#2D2D2D" : "#E0E0E0"}
-            strokeWidth="3"
-            fill="none"
-          />
-       
-          <Circle
-            cx="18"
-            cy="18"
-            r="15"
-            stroke={isDark ? "#FB923C" : "#FB923C"}
-            strokeWidth="3"
-            fill="none"
-            strokeDasharray={`${percentage} 100`} 
-            strokeLinecap="round"
-            transform="rotate(-90 18 18)" 
-          />
-        </Svg>
-
-       
+        <AnimatedCircularProgress
+          target={totalCalories}
+          consumed={consumedCalories}
+          size={50}
+          strokeWidth={3}
+          color="#FB923C"
+          backgroundColor={isDark ? "#2D2D2D" : "#E0E0E0"}
+        />
         <View
           style={{
             position: "absolute",

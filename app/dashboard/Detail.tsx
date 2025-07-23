@@ -27,115 +27,15 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-import { IMeal } from "model/meal";
-
-
-
-const mealData : IMeal[] = [
-  {
-    id: 1,
-    mealName: "Breakfast",
-    foodList: [
-      {
-        id: 1,
-        name: "Oatmeal",
-        quantity: 150,
-        carb: 30,
-        protein: 5,
-        fat: 3,
-        total: 200,
-      },
-      {
-        id: 2,
-        name: "Banana",
-        quantity: 100,
-        carb: 27,
-        protein: 1,
-        fat: 0,
-        total: 100,
-      },
-      {
-        id: 3,
-        name: "Eggs",
-        quantity: 200,
-        carb: 1,
-        protein: 14,
-        fat: 15,
-        total: 250,
-      },
-    ],
-  },
-  {
-    id: 2,
-    mealName: "Lunch",
-    foodList: [
-      {
-        id: 1,
-        name: "Grilled Chicken",
-        quantity: 200,
-        carb: 0,
-        protein: 43,
-        fat: 6,
-        total: 300,
-      },
-      {
-        id: 2,
-        name: "Steamed Rice",
-        quantity: 150,
-        carb: 40,
-        protein: 4,
-        fat: 1,
-        total: 180,
-      },
-      {
-        id: 3,
-        name: "Broccoli",
-        quantity: 100,
-        carb: 7,
-        protein: 3,
-        fat: 0,
-        total: 50,
-      },
-    ],
-  },
-  {
-    id: 3,
-    mealName: "Dinner",
-    foodList: [
-      {
-        id: 1,
-        name: "Salmon",
-        quantity: 180,
-        carb: 0,
-        protein: 38,
-        fat: 12,
-        total: 320,
-      },
-      {
-        id: 2,
-        name: "Sweet Potato",
-        quantity: 150,
-        carb: 35,
-        protein: 2,
-        fat: 0,
-        total: 140,
-      },
-      {
-        id: 3,
-        name: "Spinach",
-        quantity: 100,
-        carb: 4,
-        protein: 3,
-        fat: 0,
-        total: 40,
-      },
-    ],
-  },
-];
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DailyOverview, IWaterIntake } from "model/macro";
+import { IMealCard } from "model/meal";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
 
 const Detail = () => {
   const colorScheme = useColorScheme();
+  const apiUrl = process.env.API_URL;
   const isDark = colorScheme === "dark";
   const lightGradientColors: [string, string] = ["#FFE4C4", "#FFF7ED"];
   const [water, setWater] = React.useState(500);
@@ -146,6 +46,17 @@ const Detail = () => {
   const progress = useSharedValue(0);
   const [date, setDate] = React.useState(new Date());
   const [modalVisible, setModalVisible] = React.useState(false);
+  const [macroOverview, setMacroOverview] = React.useState<DailyOverview[]>([]);
+  const [meals, setMeals] = React.useState<IMealCard[]>([]);
+  const [waterIntake, setWaterIntake] = React.useState<IWaterIntake[]>([]);
+  const [macroRender, setMacroRender] = React.useState<DailyOverview | null>(
+    null
+  );
+  const [mealRender, setMealRender] = React.useState<IMealCard[]>([]);
+  const [waterRender, setWaterRender] = React.useState<IWaterIntake | null>(
+    null
+  );
+
   const waterOptions = [100, 200, 300, 400, 500, 600, 700, 800, 1000];
   useEffect(() => {
     progress.value = withTiming(currentWater / targetWater, { duration: 300 });
@@ -158,22 +69,103 @@ const Detail = () => {
   const onDecrement = () => {
     if (currentWater > 0) {
       setCurrentWater(currentWater - water); // Giảm 100ml mỗi lần nhấn
-    }
-    else{
+    } else {
       setCurrentWater(0); // Đảm bảo không giảm dưới 0
     }
   };
-
   const onIncrement = () => {
     if (currentWater < targetWater) {
       setCurrentWater(currentWater + water); // Tăng 100ml mỗi lần nhấn
     }
   };
 
-  useEffect(() => {
-    console.log("Selected date:", date.toISOString().split("T")[0]); // Log the selected date in YYYY-MM-DD format
-  }, [date]);
+  const getMacroOverview = async () => {
+    const userToken = await SecureStore.getItemAsync("userToken");
+    const macros = await AsyncStorage.getItem("macroOverview");
+    if (macros) {
+      setMacroOverview(JSON.parse(macros));
+    } else {
+      try {
+        const res = await axios.get(`${apiUrl}/macro/overview`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          setMacroOverview(res.data);
+          await AsyncStorage.setItem("macroOverview", JSON.stringify(res.data));
+        }
+      } catch (error) {
+        // console.error("Error fetching macro overview:", error);
+      }
+    }
+  };
 
+  const getMealData = async () => {
+    const userToken = await SecureStore.getItemAsync("userToken");
+    const meals = await AsyncStorage.getItem("mealData");
+    if (meals) {
+      setMeals(JSON.parse(meals));
+    } else {
+      try {
+        const res = await axios.get(`${apiUrl}/meals`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          await AsyncStorage.setItem("mealData", JSON.stringify(res.data));
+          setMeals(res.data);
+        }
+      } catch (error) {
+        // console.error("Error fetching meal data:", error);
+      }
+    }
+  };
+
+  const getWaterIntake = async () => {
+    const userToken = await SecureStore.getItemAsync("userToken");
+    const waterIntake = await AsyncStorage.getItem("waterIntake");
+    if (waterIntake) {
+      setWaterIntake(JSON.parse(waterIntake));
+    } else {
+      try {
+        const res = await axios.get(`${apiUrl}/water/intake`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          await AsyncStorage.setItem("waterIntake", JSON.stringify(res.data));
+          setWaterIntake(res.data);
+        }
+      } catch (error) {
+        // console.error("Error fetching water intake:", error);
+      }
+    }
+  };
+  useEffect(() => {
+    getMacroOverview();
+    getMealData();
+    getWaterIntake();
+    
+  }, []);
+
+  useEffect(() => {
+      const selectedDate = date.toISOString().split("T")[0]; // Format YYYY-MM-DD
+      const macroForDate = macroOverview.find(
+        (item) => item.date === selectedDate
+      );
+      const mealsForDate = meals.filter((meal) => meal.date === selectedDate);
+      const waterForDate = waterIntake.find((item) => item.date === selectedDate);
+  
+      setMacroRender(macroForDate || null);
+      setMealRender(mealsForDate);
+      setWaterRender(waterForDate || null);
+      console.log("Macro Overview for date:", macroForDate);
+      console.log("Meals for date:", mealsForDate);
+      console.log("Water Intake for date:", waterForDate);
+    }, [date, macroOverview, meals, waterIntake]);
   return (
     <GestureHandlerRootView
       className={`${isDark ? "bg-[#1C1C1E]" : "bg-[#FFF7ED]"} flex-1`}
@@ -207,29 +199,28 @@ const Detail = () => {
           initialDate={new Date().toISOString().split("T")[0]} // Format YYYY-MM-DD
         />
         <NutritionMacro
-          currentCarb={100}
-          targetCarb={200}
-          currentProtein={80}
-          targetProtein={150}
-          currentFat={70}
-          targetFat={70}
-          currentCalories={1800}
-          targetCalories={2000}
+          currentCarb={macroRender ? macroRender.carb.consumed : 0}
+          targetCarb={macroRender ? macroRender.carb.target : 0}
+          currentProtein={macroRender ? macroRender.protein.consumed : 0}
+          targetProtein={macroRender ? macroRender.protein.target : 0}
+          currentFat={macroRender ? macroRender.fat.consumed : 0}
+          targetFat={macroRender ? macroRender.fat.target : 0}
+          currentCalories={macroRender ? macroRender.calories_today : 0}
+          targetCalories={macroRender ? macroRender.calories_today : 0}
         />
 
         {/* Nội dung scroll */}
         <View className="flex-1 px-4 flex-col gap-2 py-2">
-          <ScrollView className="flex-1">
+          {/* <ScrollView className="flex-1">
             {mealData.map((meal) => (
               <MealCardWithFoodList
                 key={meal.id}
                 mealId={meal.id}
                 mealName={meal.mealName}
                 foodList={meal.foodList}
-               
               />
             ))}
-          </ScrollView>
+          </ScrollView> */}
 
           {/* Water Tracker nằm dưới cùng */}
           <View className={`flex-col items-center px-6 pb-10 rounded-2xl mt-2`}>

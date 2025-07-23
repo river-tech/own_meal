@@ -1,10 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, useColorScheme, Dimensions } from "react-native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faBowlRice, faDrumstickBite } from "@fortawesome/free-solid-svg-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AnimatedHorizontalBar from "./BarAnimation";
+import Animated, {
+  useSharedValue,
+  withTiming,
+  useAnimatedStyle,
+  Easing,
+} from "react-native-reanimated";
 
 const screenWidth = Dimensions.get("window").width;
+const AnimatedView = Animated.createAnimatedComponent(View);
+
 const VerticalBar = ({
   current,
   target,
@@ -16,27 +25,47 @@ const VerticalBar = ({
   color: string;
   icon: React.ReactNode;
 }) => {
-  const percentage = Math.min((current / target) * 100, 100);
+
+  const heightValue = useSharedValue(0);
+
+  useEffect(() => {
+    const newHeight = target === 0 ? 0 : Math.min((current / target) * 100, 100);;
+    heightValue.value = withTiming(newHeight, {
+      duration: newHeight === 0 ? 1200 : 800,
+      easing: Easing.out(Easing.exp),
+    });
+  }, [current, target]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: `${heightValue.value}%`,
+  }));
+  
   return (
     <View className="items-center mx-1">
+      {/* Bar container */}
       <View
-        className="w-3 h-16 rounded-full overflow-hidden bg-white shadow-lg"
+        className="w-[10px] h-16 rounded-full overflow-hidden bg-white shadow-lg"
         style={{
           justifyContent: "flex-end",
           borderWidth: 1,
           borderColor: "#E5E5E5",
         }}
       >
-        <View
-          style={{
-            height: `${percentage}%`,
-            backgroundColor: color,
-            width: "100%",
-          }}
+        {/* Animated bar */}
+        <AnimatedView
+          style={[
+            {
+              width: "100%",
+              backgroundColor: color,
+            },
+            animatedStyle,
+          ]}
         />
       </View>
+
+      {/* Icon below */}
       <View
-        className="mt-2 w-8 h-8 rounded-full items-center justify-center bg-white shadow-md"
+        className="mt-2 w-8 h-8 rounded-full items-center justify-center shadow-md"
         style={{ backgroundColor: "white" }}
       >
         {icon}
@@ -44,6 +73,7 @@ const VerticalBar = ({
     </View>
   );
 };
+
 
 const MealCard = ({
   mealName,
@@ -94,15 +124,15 @@ const MealCard = ({
         </Text>
 
         {/* Horizontal Progress Bar */}
-        <View className="w-[80%] h-2 bg-white/30 rounded-full mb-4 shadow-md">
-          <View
-            className="h-full rounded-full"
-            style={{
-              width: `${percentageKcal}%`,
-              backgroundColor: "#FB923C",
-            }}
-          />
-        </View>
+      <AnimatedHorizontalBar
+          width={150} // Adjust width to fit the card
+          height={8}
+          consumed={currentKcal}
+          target={targetKcal}
+          color="#F4A261"
+          backgroundColor="#E0E0E0"
+          borderRadius={5}
+        />
       </View>
 
       {/* Macro Vertical Bars */}

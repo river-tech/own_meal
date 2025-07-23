@@ -1,9 +1,10 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faBowlRice, faDrumstickBite } from "@fortawesome/free-solid-svg-icons";
-import { View, Text, useColorScheme } from "react-native";  
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { View, Text, useColorScheme } from "react-native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Circle } from "react-native-svg";
+import AnimatedCircularProgress from "./CircleAnimation";
 
 const NutritionCard = ({
   title,
@@ -29,44 +30,31 @@ const NutritionCard = ({
       className={`w-[30%] p-4 rounded-3xl shadow pb-5 ${isDark ? "bg-[#2D2D2D]" : "bg-white"} items-center`}
       style={{ borderColor: color, borderWidth: 2 }}
     >
-      <Text className={`text-sm font-medium ${colorScheme === "dark" ? "text-white" : "text-black"} mb-1`}>
+      <Text
+        className={`text-sm font-medium ${colorScheme === "dark" ? "text-white" : "text-black"} mb-1`}
+      >
         {`${currentAmount} / ${targetAmount} ${unit}`}
       </Text>
 
-      <Text className={`text-xl font-bold`} style={{ color }}>{title}</Text>
+      <Text className={`text-xl font-bold`} style={{ color }}>
+        {title}
+      </Text>
 
       {/* Circle + Icon */}
       <View className="mt-2 relative w-[60px] h-[60px] items-center justify-center">
-        <Svg width="60" height="60" viewBox="0 0 36 36" style={{ position: "absolute" }}>
-          <Circle
-            cx="18"
-            cy="18"
-            r="15"
-            stroke={isDark ? "#2D2D2D" : "#E0E0E0"}
-            strokeWidth="3"
-            fill="none"
-          />
-          <Circle
-            cx="18"
-            cy="18"
-            r="15"
-            stroke={color}
-            strokeWidth="3"
-            fill="none"
-            strokeDasharray={`${(percentage * 94.2) / 100} 94.2`} // 2πr = ~94.2
-            strokeLinecap="round"
-            transform="rotate(-90 18 18)"
-          />
-        </Svg>
-
+        <AnimatedCircularProgress
+          target={targetAmount}
+          consumed={currentAmount}
+          size={60}
+          strokeWidth={3}
+          color={color}
+          backgroundColor={isDark ? "#2D2D2D" : "#E0E0E0"}
+        />
         {/* Icon ở giữa */}
-        <View className="absolute">
-          {icon}
-        </View>
+        <View className="absolute">{icon}</View>
       </View>
 
       {/* Progress Bar text */}
-    
     </View>
   );
 };
@@ -97,11 +85,13 @@ export default function NutritionOverview({
         unit="g"
       />
 
-       <NutritionCard
+      <NutritionCard
         title="Protein"
         currentAmount={currentProtein}
         targetAmount={targetProtein}
-        icon={<FontAwesomeIcon icon={faDrumstickBite} size={24} color="#B6474F" />}
+        icon={
+          <FontAwesomeIcon icon={faDrumstickBite} size={24} color="#B6474F" />
+        }
         color="#B6474F"
         unit="g"
       />
@@ -110,7 +100,9 @@ export default function NutritionOverview({
         title="Fat"
         currentAmount={currentFat}
         targetAmount={targetFat}
-        icon={<MaterialCommunityIcons name="peanut" size={24} color="#F4A261" />}
+        icon={
+          <MaterialCommunityIcons name="peanut" size={24} color="#F4A261" />
+        }
         color="#F4A261"
         unit="g"
       />

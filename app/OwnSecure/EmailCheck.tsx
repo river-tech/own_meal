@@ -1,16 +1,58 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, useColorScheme, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { useRouter } from "expo-router";
+import axios from "axios";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState(false);
+  const [errorText, setErrorText] = useState("");
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const handleEmailCheck = (text: string): string | null => {
+    if (!text.trim()) {
+      setError(true);
+      setErrorText("Email cannot be empty");
+      return "Email cannot be empty";
+    }
 
-  const handleSendOTP = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(text)) {
+      setError(true);
+      setErrorText("Invalid email");
+      return "Invalid email";
+    }
+
+    return null; // valid
+  };
+
+  const handleSendOTP = async () => {
     // Logic gửi OTP tới email
-    console.log("Email sent to:", email);
-    router.push(`/OwnSecure/OtpCheck?email=${email}` );  // Chuyển sang trang OTP với email làm tham số
+    const emailError = handleEmailCheck(email);
+    if (emailError) {
+      return;
+    }
+    try {
+      const res = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/auth/request-password-reset?email=${email}`
+      );
+      if (res) {
+        console.log("Email sent to:", email);
+        router.push(`/OwnSecure/OtpCheck?email=${email}`); // Chuyển sang trang OTP với email làm tham số
+
+      }
+    } catch (error) {
+      // console.error("Error sending OTP:", error);
+    }
   };
 
   return (
@@ -67,7 +109,8 @@ const ForgotPassword = () => {
             <Text
               className={`text-lg ${colorScheme === "dark" ? "text-gray-400" : "text-gray-600"} mb-8`}
             >
-              Please enter your email account to send the verification code to reset your password
+              Please enter your email account to send the verification code to
+              reset your password
             </Text>
 
             {/* Email input */}
@@ -89,10 +132,28 @@ const ForgotPassword = () => {
               placeholderTextColor={colorScheme === "dark" ? "#B0B0B0" : "#555"}
               keyboardType="email-address"
             />
+            <View>
+              {
+                error && (
+                  <Text
+                    className={`text-red-500 text-sm mb-4 ${
+                      colorScheme === "dark" ? "text-red-400" : "text-red-600"
+                    }`}
+                  >
+                    {errorText}
+                  </Text>
+                )
+              }
+            </View>
 
             {/* Send OTP button */}
-            <TouchableOpacity onPress={handleSendOTP} className="bg-orange-600 p-4 rounded-lg mb-6 w-full">
-              <Text className="text-white text-center text-lg font-bold">Send OTP</Text>
+            <TouchableOpacity
+              onPress={handleSendOTP}
+              className="bg-orange-600 p-4 rounded-lg mb-6 w-full"
+            >
+              <Text className="text-white text-center text-lg font-bold">
+                Send OTP
+              </Text>
             </TouchableOpacity>
 
             {/* Link to Sign In */}
@@ -103,7 +164,9 @@ const ForgotPassword = () => {
                 Already have an account?
               </Text>
               <TouchableOpacity onPress={() => router.push("/authen/SignIn")}>
-                <Text className="text-orange-600 text-sm ml-1 font-bold">Signin</Text>
+                <Text className="text-orange-600 text-sm ml-1 font-bold">
+                  Signin
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

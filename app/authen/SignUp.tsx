@@ -44,17 +44,20 @@ const SignUp = () => {
     setErrorText("");
     try {
       const res = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/auth/get-otp?email=${email}`
-      ); // Gọi API đăng ký
+        `${process.env.EXPO_PUBLIC_API_URL}/auth/send-otp?email=${email}`); // Gọi API đăng ký
       if (res) {
-        console.log("Đăng ký thành công:", res.data);
-        router.push(`/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
+        console.log("send otp success");
+        router.push(
+          `/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`
+        ); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
       }
     } catch (error) {
       // console.error('Error during sign up:', error);
       setError(true);
       setErrorText("An error occurred during sign up. Please try again.");
-      router.push(`/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
+      // router.push(
+      //   `/OwnSecure/OtpCheck?email=${email}&username=${username}&password=${password}&isSignUp=${"true"}`
+      // ); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
       return;
     }
   };

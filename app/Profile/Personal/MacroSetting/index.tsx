@@ -26,16 +26,17 @@ import {
 } from "react-native";
 // import { EUserDietType } from "model/user";
 import * as SecureStore from "expo-secure-store";
-import { ImacroDetails, Imacros, IMealDefine } from "model/user";
-import { IMeal } from "model/meal";
+import { ImacroDetails, IMacroOnly, IMealDefine, IPersonalDetails } from "model/user";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
-enum EUserDietType {
-  Custom = "Custom",
-  Balanced = "Balanced", // 50%C–30%F–20%P
-  HighProtein = "HighProtein", // 40%C–30%F–30%P
-  LowCarb = "LowCarb", // 25%C–35%F–40%P
-  LowFat = "LowFat", // 60%C–15%F–25%P
-  HighCarb = "HighCarb", // 65%C–20%F–15%P
+export enum EUserDietType {
+  Custom = "CUSTOM",
+  Balanced = "BALANCED", // 50%C–30%F–20%P
+  HighProtein = "HIGH_PROTEIN", // 40%C–30%F–30%P
+  LowCarb = "LOW_CARB", // 25%C–35%F–40%P
+  LowFat = "LOW_FAT", // 60%C–15%F–25%P
+  HighCarb = "HIGH_CARB", // 65%C–20%F–15%P
 }
 const DietMacrosDescription: Record<EUserDietType, string> = {
   [EUserDietType.Custom]: "Define your own macros",
@@ -51,6 +52,7 @@ export default function MacroSettingsScreen() {
   const [selectedMealIndex, setSelectedMealIndex] = useState<number | null>(
     null
   );
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const darkMode = useColorScheme() === "dark";
   const router = useRouter();
   const [calorieTotal, setCalorieTotal] = useState(2000);
@@ -65,12 +67,13 @@ export default function MacroSettingsScreen() {
   );
   const [isVisibleDietType, setIsVisibleDietType] = useState(true);
   const [mealNumber, setMealNumber] = useState(3); // Số lượng bữa ăn
+  const [isCreate, setIsCreate] = useState(false);
   const labelStyle = `${darkMode ? "text-white" : "text-black"}`;
 
   const [meals, setMeals] = useState<IMealDefine[]>([
-    { meal_name: "Meal 1", meal_time: "7:00 AM", percent_calories: 40 },
-    { meal_name: "Meal 2", meal_time: "12:00 PM", percent_calories: 35 },
-    { meal_name: "Meal 3", meal_time: "7:00 PM", percent_calories: 25 },
+    { mealName: "Meal 1", mealTime: "07:00", percentCalories: 40 },
+    { mealName: "Meal 2", mealTime: "12:00", percentCalories: 35 },
+    { mealName: "Meal 3", mealTime: "19:00", percentCalories: 25 },
   ]);
 
   const [macroIndex, setMacroIndex] = useState([
@@ -80,46 +83,93 @@ export default function MacroSettingsScreen() {
   ]);
 
   const getMacros = async () => {
-    const macrosStr = await SecureStore.getItemAsync("macros");
-    if (macrosStr) {
-      const macros: Imacros = JSON.parse(macrosStr);
-      setCalorieTotal(macros.calories);
+    const userToken = await SecureStore.getItemAsync("userToken");
+    console.log("Token:", userToken);
+    const personalDetail = await AsyncStorage.getItem("personalDetails");
+    if (personalDetail) {
+      const macros: IPersonalDetails = JSON.parse(personalDetail);
+      console.log("Macros from AsyncStorage:", macros);
+      setCalorieTotal(macros.caloriesIndex || 2000);
     }
-    const macrosData = await SecureStore.getItemAsync("macroDetails");
-    if (macrosData) {
-      const parsedMacros: ImacroDetails = JSON.parse(macrosData);
-      console.log("Parsed Macros:", parsedMacros);
-      setCarbPercent(parsedMacros.carb_percent);
-      setProteinPercent(parsedMacros.protein_percent);
-      setFatPercent(parsedMacros.fat_percent);
-      setMealNumber(parsedMacros.meal_number);
-      updateMacros(
-        parsedMacros.carb_percent,
-        parsedMacros.protein_percent,
-        parsedMacros.fat_percent
-      );
-      setDietType(parsedMacros.diet_type);
-      setWater(parsedMacros.water_target_ml);
-      setMeals(
-        parsedMacros.meals.map((meal) => ({
-          meal_name: meal.meal_name,
-          meal_time: meal.meal_time,
-          percent_calories: meal.percent_calories,
-        }))
-      );
-    }
-    else{
-      //call api to get macros
+    const macroDetails = await AsyncStorage.getItem("macroDetails");
+    const mealDetails = await AsyncStorage.getItem("mealDetails");
+    // console.log("Macro Details:", macroDetails);
+    // console.log("Meal Details:", mealDetails);
+    if (!macroDetails) {
       try {
-        
+        const res = await axios.get(`${API_URL}/users/view/macro`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          console.log("Macros from API:", res.data);
+          if (
+            res.data.carbPercent === null ||
+            res.data.proteinPercent === null ||
+            res.data.fatPercent === null ||
+            res.data.waterTargetMl === null ||
+            res.data.mealNumber === null ||
+            res.data.dietType === null ||
+            res.data.meals === null
+          ) {
+            setIsCreate(true);
+          }
+          setCarbPercent(res.data.carbPercent || 50);
+          setProteinPercent(res.data.proteinPercent || 30);
+          setFatPercent(res.data.fatPercent || 20);
+          setWater(res.data.waterTargetMl || 2);
+          setMealNumber(res.data.mealNumber || 3);
+          setDietType(res.data.dietType || EUserDietType.Balanced);
+        }
       } catch (error) {
-        
+        console.error("Error fetching macros from API:", error);
       }
+    } else {
+      const macrosData: IMacroOnly = JSON.parse(macroDetails);
+      console.log("Macros from AsyncStorage:", macrosData);
+      setCarbPercent(macrosData.carbPercent || 50);
+      setProteinPercent(macrosData.proteinPercent || 30);
+      setFatPercent(macrosData.fatPercent || 20);
+      setWater(macrosData.waterTargetMl || 2);
+      setMealNumber(macrosData.mealNumber || 3);
+      setDietType(
+        (macrosData.dietType as EUserDietType) || EUserDietType.Balanced
+      );
+    }
+    if (!mealDetails) {
+      try {
+        const res = await axios.get(`${API_URL}/meals/macro`, {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          console.log("Meals from API:", res.data);
+          if (res.data.length !== 0) {
+            const mealsData: IMealDefine[] = res.data.map(
+              (meal: IMealDefine) => ({
+                mealName: meal.mealName,
+                mealTime: meal.mealTime,
+                percentCalories: meal.percentCalories,
+              })
+            );
+            setMeals(mealsData);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching meals from API:", error);
+      }
+    } else {
+      const mealsData: IMealDefine[] = JSON.parse(mealDetails);
+      console.log("Meals from AsyncStorage:", mealsData);
+      setMeals(mealsData);
     }
   };
   useEffect(() => {
     getMacros();
-  }, []);
+    updateMacros(carbPercent, proteinPercent, fatPercent);
+  }, [calorieTotal]);
 
   const updateMacros = (carb: number, protein: number, fat: number) => {
     const c = carb;
@@ -154,7 +204,7 @@ export default function MacroSettingsScreen() {
 
   useEffect(() => {
     if (
-      meals.map((m) => m.percent_calories).reduce((a, b) => a + b, 0) !== 100
+      meals.map((m) => m.percentCalories).reduce((a, b) => a + b, 0) !== 100
     ) {
       setIsError(true);
       setErrorMessage("Tổng phần trăm của các bữa ăn phải bằng 100%");
@@ -186,33 +236,71 @@ export default function MacroSettingsScreen() {
   }
 
   const handleConfirmTime = (date: Date) => {
-    if (selectedMealIndex !== null) {
-      const updatedMeals = [...meals];
-      updatedMeals[selectedMealIndex].meal_time = moment(date).format("h:mm A");
-      setMeals(updatedMeals);
-    }
-    hideTimePicker();
-  };
+  if (selectedMealIndex !== null) {
+    const updatedMeals = [...meals];
+    
+    // Format thời gian thành "HH:mm" (24-hour format)
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    
+    // Tạo chuỗi thời gian định dạng "HH:mm"
+    updatedMeals[selectedMealIndex].mealTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    
+    setMeals(updatedMeals);
+  }
+  hideTimePicker();
+};
 
   const handleSaveChanges = async () => {
     const macrosDetails: ImacroDetails = {
-      diet_type: dietType,
-      protein_percent: proteinPercent,
-      fat_percent: fatPercent,
-      carb_percent: carbPercent,
-      water_target_ml: water,
-      meal_number: mealNumber,
+      caloriesTarget: calorieTotal,
+      dietType: dietType,
+      proteinPercent: proteinPercent,
+      fatPercent: fatPercent,
+      carbPercent: carbPercent,
+      waterTargetMl: water,
+      mealNumber: mealNumber,
       meals: meals.map((meal: IMealDefine) => ({
-        meal_name: meal.meal_name,
-        meal_time: meal.meal_time,
-        percent_calories: meal.percent_calories,
+        mealName: meal.mealName,
+        mealTime: meal.mealTime,
+        percentCalories: meal.percentCalories,
       })),
     };
     if (!isError) {
-      await SecureStore.setItemAsync(
-        "macroDetails",
-        JSON.stringify(macrosDetails)
-      );
+      try {
+        const userToken = await SecureStore.getItemAsync("userToken");
+        console.log(`${API_URL}/users/${isCreate ? "create" : "edit"}/macro`);
+        const res = await axios({
+          method: isCreate ? "post" : "put",
+          url: `${API_URL}/users/${isCreate ? "create" : "edit"}/macro`,
+          data: macrosDetails,
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        });
+        if (res) {
+          const macrosData: IMacroOnly = {
+            caloriesTarget: macrosDetails.caloriesTarget,
+            dietType: macrosDetails.dietType,
+            proteinPercent: macrosDetails.proteinPercent,
+            fatPercent: macrosDetails.fatPercent,
+            carbPercent: macrosDetails.carbPercent,
+            waterTargetMl: macrosDetails.waterTargetMl,
+            mealNumber: macrosDetails.mealNumber,
+          }
+          await AsyncStorage.setItem("macroDetails", JSON.stringify(macrosData));
+
+          const mealData: IMealDefine[] = macrosDetails.meals.map((meal: IMealDefine) => ({
+            mealName: meal.mealName,
+            mealTime: meal.mealTime,
+            percentCalories: meal.percentCalories,
+          }));
+          await AsyncStorage.setItem("mealDetails", JSON.stringify(mealData));
+        }
+      } catch (error) {
+        console.error("Error saving macros:", error);
+      }
+     
     }
     console.log("Macros Details to Save:", macrosDetails);
   };
@@ -510,9 +598,9 @@ export default function MacroSettingsScreen() {
 
                     setMealNumber(num);
                     const updatedMeals = [...Array(num)].map((_, index) => ({
-                      meal_name: `Meal ${index + 1}`,
-                      meal_time: meals[index]?.meal_time || "",
-                      percent_calories: Math.round(100 / num),
+                      mealName: `Meal ${index + 1}`,
+                      mealTime: meals[index]?.mealTime || "",
+                      percentCalories: Math.round(100 / num),
                     }));
                     setMeals(updatedMeals);
                   }}
@@ -531,9 +619,9 @@ export default function MacroSettingsScreen() {
                       distributePercentEvenly(newNumber);
                     const updatedMeals = [...Array(newNumber)].map(
                       (_, index) => ({
-                        meal_name: `Meal ${index + 1}`,
-                        meal_time: meals[index]?.meal_time || "",
-                        percent_calories: distributedPercents[index],
+                        mealName: `Meal ${index + 1}`,
+                        mealTime: meals[index]?.mealTime || "",
+                        percentCalories: distributedPercents[index],
                       })
                     );
                     setMeals(updatedMeals);
@@ -571,10 +659,10 @@ export default function MacroSettingsScreen() {
                 {/* Input tên bữa ăn */}
                 <View className=" ml-2 flex-row items-center flex-1   gap-2">
                   <TextInput
-                    value={meal.meal_name}
+                    value={meal.mealName}
                     onChangeText={(text) => {
                       const newMeals = [...meals];
-                      newMeals[idx].meal_name = text;
+                      newMeals[idx].mealName = text;
                       setMeals(newMeals);
                     }}
                     placeholder="Meal name"
@@ -588,11 +676,11 @@ export default function MacroSettingsScreen() {
                   {/* Input % */}
                   <View className="flex-row items-center gap-[3px]">
                     <TextInput
-                      value={meal.percent_calories?.toString() || ""}
+                      value={meal.percentCalories?.toString() || ""}
                       onChangeText={(text) => {
                         const newMeals = [...meals];
                         const val = parseFloat(text);
-                        newMeals[idx].percent_calories = isNaN(val) ? 0 : val;
+                        newMeals[idx].percentCalories = isNaN(val) ? 0 : val;
                         setMeals(newMeals);
                       }}
                       placeholder="%"
@@ -615,7 +703,7 @@ export default function MacroSettingsScreen() {
                 <Text
                   className={`ml-2 text-xs ${darkMode ? "text-white" : "text-black"}`}
                 >
-                  {meal.meal_time || "7:00 AM"}
+                    {meal.mealTime || "07:00"}
                 </Text>
 
                 {/* Nút chọn thời gian */}

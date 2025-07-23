@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSearchParams } from "expo-router/build/hooks";
+import axios from "axios";
 
 const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -18,32 +19,44 @@ const ChangePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const useParams = useSearchParams();
   const renew = useParams.get("renew"); // Kiểm tra xem có tham số renew không
-
+  const [error, setError] = useState(false);
+  const [errorText, setErrorText] = useState("");
+  const Email = useParams.get("email");
+  
 
   const colorScheme = useColorScheme();
   const router = useRouter();
 
- const handleSave = () => {
-  if (newPassword.trim() === "" || confirmPassword.trim() === "") {
-   
-    return;
-  }
-
-  if (newPassword === confirmPassword) {
-
-    console.log("Password changed successfully");
-    if (renew) {
-      router.push("/authen/SignIn");
-    } else {
-      console.log("Current password:", currentPassword);
-      console.log("New password:", newPassword);
+  const handleSave = async () => {
+    if (newPassword.trim() === "" || confirmPassword.trim() === "") {
+      return;
     }
-  } else {
-    
-    console.log("Passwords do not match");
-  }
-};
 
+    if (newPassword !== confirmPassword) {
+      setError(true);
+      setErrorText("Passwords do not match");
+      return;
+    }
+    try {
+      console.log("Saving new password for email:", Email);
+      console.log("New Password:", newPassword);
+      const res= await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/auth/change-password`,{
+          email: useParams.get("email"),
+          password: newPassword,
+        }
+      );
+      if(res){
+        console.log("Password changed successfully");
+        router.push("/authen/SignIn"); // Chuyển hướng đến trang đăng nhập sau khi đổi mật khẩu thành công
+      }
+    } catch (error) {
+      console.error("Error saving new password:", error);
+      setError(true);
+      setErrorText("Failed to change password. Please try again.");
+      return;
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">

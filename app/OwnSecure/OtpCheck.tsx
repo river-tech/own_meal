@@ -22,9 +22,7 @@ const VerifyOTP = () => {
   const email = searchParams.get("email");
   const username = searchParams.get("username");
   const isSignUp = searchParams.get("isSignUp");
-  const password = searchParams.get("password") ;
-
-
+  const password = searchParams.get("password");
 
   useEffect(() => {
     // Thiết lập bộ đếm ngược
@@ -36,17 +34,15 @@ const VerifyOTP = () => {
         }
         return prev - 1;
       });
-   
     }, 1000);
 
     // Dọn dẹp bộ đếm khi component unmount
-       console.log("Time left:", timeLeft);
-      console.log("username:", username);
-      console.log("email:", email);
-      console.log("isSignUp:", isSignUp);
-      console.log("password:", password);
+    console.log("Time left:", timeLeft);
+    console.log("username:", username);
+    console.log("email:", email);
+    console.log("isSignUp:", isSignUp);
+    console.log("password:", password);
     return () => clearInterval(timer);
-    
   }, []);
 
   // Sử dụng useRef để tham chiếu tới các TextInput
@@ -75,41 +71,46 @@ const VerifyOTP = () => {
     }
   };
 
-  const handleOTPVerification =  async() => {
+  const handleOTPVerification = async () => {
     // Xử lý xác minh OTP ở đây
     const otpCode = otp.join("");
     console.log("OTP Code:", otpCode);
-    try {
-      const res = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/verify-otp?email=${email}&otp=${otpCode}`)
-      console.log(`${process.env.EXPO_PUBLIC_API_URL}/auth/verify-otp?email=${email}&otp=${otpCode}`)
-      if(res && isSignUp){
-        try {
-          const res = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`,{
-            email: email,
+    if (isSignUp) {
+      try {
+        const res = await axios.post(
+          `${process.env.EXPO_PUBLIC_API_URL}/auth/register`,
+          {
             username: username,
+            email: email,
             password: password,
-          })
-          if(res){
-            router.push('/authen/SignIn')
+            code: otpCode,
           }
-        } catch (error) {
-          console.error("", error);
-          // Xử lý lỗi nếu cần
-          return;
+        );
+        if (res) {
+          console.log("OTP verification successful");
+          // Chuyển hướng đến trang đăng nhập sau khi xác minh OTP thành công
+          router.push("/authen/SignIn");
         }
+      } catch (error) {
+        console.error("Error verifying OTP:", error);
+        // Xử lý lỗi nếu cần
+        return;
       }
-      else if(res && !isSignUp){
-        router.push('/OwnSecure/ChangePassword?renew=true')
-      }
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      // Xử lý lỗi nếu cần
-      return; 
     }
-    // Gọi API để xác minh OTP
-    // Nếu thành công, chuyển hướng đến trang đổi mật khẩu hoặc trang chính
-    router.push(`/OwnSecure/ChangePassword?renew=${true}`);
-  }
+    else{
+      try {
+        const res = await axios.post(
+          `${process.env.EXPO_PUBLIC_API_URL}/auth/verify-otp?email=${email}&code=${otpCode}`
+        );
+        if(res){
+          console.log("OTP verification successful");
+          router.push(`/OwnSecure/ChangePassword?email=${email}&&renew=${"true"}`); // Chuyển hướng đến trang đổi mật khẩu
+        }
+      } catch (error) {
+        console.log("Error verifying OTP:", error);
+      }
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -219,7 +220,10 @@ const VerifyOTP = () => {
             </Text>
 
             {/* Verify Code Button */}
-            <TouchableOpacity onPress={()=>handleOTPVerification()} className="bg-orange-600 p-4 rounded-lg mb-6 shadow-lg w-full">
+            <TouchableOpacity
+              onPress={() => handleOTPVerification()}
+              className="bg-orange-600 p-4 rounded-lg mb-6 shadow-lg w-full"
+            >
               <Text className="text-white text-center text-lg font-bold">
                 Verify Code
               </Text>
