@@ -1,9 +1,8 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  Switch,
   TouchableOpacity,
   Image,
   useColorScheme,
@@ -11,14 +10,9 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faBell,
-  faPalette,
   faKey,
   faSignOutAlt,
-  faCamera,
   faArrowLeft,
-  faEnvelope,
-  faUser,
-  faX,
   faPen,
   faCheck,
 } from "@fortawesome/free-solid-svg-icons";
@@ -30,6 +24,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 const CLOUD_NAME = "dqupovatf"; // ví dụ: "myapp123"
 const UPLOAD_PRESET = "demo_frame_print"; // ví dụ: "expo_upload"
+import NetInfo from "@react-native-community/netinfo";
+import useAuth from "app/hooks/useAuth";
 
 export default function SettingsScreen() {
   const isDark = useColorScheme() === "dark";
@@ -44,78 +40,90 @@ export default function SettingsScreen() {
   const [avatar, setAvatar] = useState("");
   const [isEditName, setIsEditName] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const { getToken } = useAuth();
+
   useEffect(() => {
-    const getUserInfo = async () => {
-      const personalSettings = await AsyncStorage.getItem("personalSettings");
-      console.log("Personal Settingssssss:", personalSettings);
-      if (personalSettings) {
-        const parsedUserInfo: IUser = JSON.parse(personalSettings);
-        setUserInfo(parsedUserInfo);
-        setName(parsedUserInfo.username || "");
-        setAvatar(parsedUserInfo.avatar || ""); // Set avatar from user info
-        setNotificationEnabled(parsedUserInfo.notification === "true");
-        // console.log("User info:", parsedUserInfo);
+    let isMounted = true;
+
+    const boot = async () => {
+      const [settingStr, draftStr] = await Promise.all([
+        AsyncStorage.getItem("personalSettings"),
+        AsyncStorage.getItem("draftSettings"),
+      ]);
+      if (!isMounted) return;
+
+      if (settingStr) {
+        const parsed: IUser = JSON.parse(settingStr);
+        setUserInfo(parsed);
+        setName(parsed.username ?? "");
+        setAvatar(parsed.avatar ?? "");
+        setNotificationEnabled(parsed.notification === true ? true : false);
+      }
+      const { isConnected } = await NetInfo.fetch();
+      if (isConnected && draftStr) {
+        const ok = await pushToServer(JSON.parse(draftStr));
+        if (ok) await AsyncStorage.removeItem("draftSettings");
       }
     };
-    getUserInfo();
+
+    boot();
+    const unsub = NetInfo.addEventListener((s) => s.isConnected && boot());
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, []);
 
-  const handleSaveChanges = async () => {
-    const token = await SecureStore.getItemAsync("userToken");
-    if(name.trim() === "") {
-      setError("Name cannot be empty");
-      return false;
-    }
-    try {
-      const res = await axios.put(
-        `${API_URL}/users/edit/setting`,
-        {
-          username: name,
-          avatar: avatar,
-          notification: notificationEnabled,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (res) {
-        console.log("User settings updated:", res.data);
-        const updatedUser: IUser = {
-          ...userInfo,
-          username: name,
-          avatar: avatar,
-          notification: notificationEnabled ? "true" : "false",
-          userId: userInfo?.userId,
-          email: userInfo?.email ?? null,
-        };
-        setUserInfo(updatedUser);      
-        await AsyncStorage.setItem(
-          "personalSettings",
-          JSON.stringify(updatedUser)
-        );
-        setIsEditName(false); // Đóng chế độ chỉnh sửa tên
-        return true;
+  const pushToServer = useCallback(
+    async (payload: IUser | Partial<IUser>) => {
+      const token = await getToken();
+      try {
+        const res = await axios.put(`${API_URL}/users/edit/setting`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.status === 200;
+      } catch (err) {
+        console.log("Sync failed:", err);
+        return false;
       }
-    } catch (error) {
-      console.error("Error saving user settings:", error);
-      return false;
+    },
+    [API_URL]
+  );
+
+  const handleSaveChanges = async () => {
+    if (!name.trim()) return setError("Name cannot be empty");
+    const full: IUser = {
+      ...userInfo,
+      username: name,
+      avatar: avatar,
+      notification: notificationEnabled,
+      userId: userInfo?.userId,
+    } as IUser;
+
+    console.log("Saving user info:", full);
+
+    setUserInfo(full);
+    await AsyncStorage.setItem("personalSettings", JSON.stringify(full));
+    setIsEditName(false);
+    setIsSaved(true);
+    const { isConnected } = await NetInfo.fetch();
+    if (isConnected && (await pushToServer(full))) {
+      await AsyncStorage.removeItem("draftSettings");
+      return true;
     }
+    await AsyncStorage.setItem("draftSettings", JSON.stringify(full));
+    return true;
   };
 
   const handleBackPress = async () => {
-    const isUpdated = await handleSaveChanges();
-    if (isUpdated) {
-      router.push("/dashboard/Home");
-    }
+    router.replace("/dashboard/Home");
   };
 
   const handleChangePassword = async () => {
-    const isUpdated = await handleSaveChanges();
-    if (isUpdated) {
-      router.push(`/OwnSecure/OtpCheck?email=${userInfo?.email}`);
-    }
+    router.push(`/OwnSecure/OtpCheck?email=${userInfo?.email}`);
   };
 
   const pickImage = async () => {
@@ -128,7 +136,6 @@ export default function SettingsScreen() {
     });
 
     if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
       uploadToCloudinary(result.assets[0].uri); // Gửi ảnh lên Cloudinary
     }
   };
@@ -183,13 +190,14 @@ export default function SettingsScreen() {
     );
   };
 
+  useEffect(() => {
+    setIsSaved(false);
+  }, [name, notificationEnabled, avatar]);
+
   const signOut = async () => {
     setUserInfo(null);
     await SecureStore.deleteItemAsync("userToken");
-    await AsyncStorage.removeItem("personalDetails");
-    await AsyncStorage.removeItem("personalSettings");
-    await AsyncStorage.removeItem("userInfo");
-    await AsyncStorage.removeItem("macroDetails");
+    await AsyncStorage.clear();
     router.push("/");
   };
 
@@ -293,6 +301,17 @@ export default function SettingsScreen() {
         >
           <FontAwesomeIcon icon={faSignOutAlt} color="#FF7A00" />
           <Text className={textColor}>Sign out</Text>
+        </TouchableOpacity>
+      </View>
+      <View className="flex-1 justify-end items-center ">
+        <TouchableOpacity
+          onPress={() => handleSaveChanges()}
+          disabled={isSaved}
+          className={`absolute bottom-10 right-5 px-6 py-2 rounded-full shadow-lg ${
+            isSaved ? "bg-gray-400" : "bg-[#FF7A00]"
+          }`}
+        >
+          <Text className="text-white text-xl font-bold">Save</Text>
         </TouchableOpacity>
       </View>
     </View>

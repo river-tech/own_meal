@@ -1,13 +1,5 @@
-import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  useColorScheme,
-  FlatList,
-  useAnimatedValue,
-  Dimensions,
-  TouchableOpacity,
-} from "react-native";
+import React, { use, useEffect } from "react";
+import { View, Text, useColorScheme, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient"; // nếu dùng expo
 import Navbar from "../Element/Navbar";
@@ -19,11 +11,9 @@ import { IMealCard } from "../../model/meal";
 import Animated from "react-native-reanimated"; // Đảm bảo bạn đã cài Reanimated
 import WaterCard from "../Element/WaterProgress";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import axios from "axios";
-import { IPersonalDetails, IUser } from "model/user";
 import { DailyOverview, IWaterIntake } from "model/macro";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import useAuth from "app/hooks/useAuth";
+
 
 const MealList = ({ meals }: { meals: IMealCard[] }) => {
   return (
@@ -72,7 +62,6 @@ export default function Home() {
   const lightGradientColors: [string, string] = ["#FFE4C4", "#FFF7ED"];
   const darkBgColor = "#1E1E1E";
   const router = useRouter();
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
   const [date, setDate] = React.useState(new Date()); // State to hold the selected date
   const [macroOverview, setMacroOverview] = React.useState<DailyOverview[]>([]);
   const [meals, setMeals] = React.useState<IMealCard[]>([]);
@@ -84,133 +73,12 @@ export default function Home() {
   const [waterRender, setWaterRender] = React.useState<IWaterIntake | null>(
     null
   );
-  const checkLoginStatus = async () => {
-    const userToken = await SecureStore.getItemAsync("userToken");
 
-    if (!userToken) {
-      router.push("/authen/SignIn"); // Chuyển hướng đến trang đăng nhập nếu chưa đăng nhập
-      return;
-    }
-  };
-
-  const getMacroOverview = async () => {
-    const userToken = await SecureStore.getItemAsync("userToken");
-    const macros = await AsyncStorage.getItem("macroOverview");
-    if (macros) {
-      setMacroOverview(JSON.parse(macros));
-    } else {
-      try {
-        const res = await axios.get(`${apiUrl}/macro/overview`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (res) {
-          setMacroOverview(res.data);
-          await AsyncStorage.setItem("macroOverview", JSON.stringify(res.data));
-        }
-      } catch (error) {
-        // console.error("Error fetching macro overview:", error);
-      }
-    }
-  };
-  const getWaterIntake = async () => {
-    const userToken = await SecureStore.getItemAsync("userToken");
-    const waterIntake = await AsyncStorage.getItem("waterIntake");
-    if (waterIntake) {
-      setWaterIntake(JSON.parse(waterIntake));
-    } else {
-      try {
-        const res = await axios.get(`${apiUrl}/water/intake`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (res) {
-          await AsyncStorage.setItem("waterIntake", JSON.stringify(res.data));
-          setWaterIntake(res.data);
-        }
-      } catch (error) {
-        // console.error("Error fetching water intake:", error);
-      }
-    }
-  };
-
-  const getMealData = async () => {
-    const userToken = await SecureStore.getItemAsync("userToken");
-    const meals = await AsyncStorage.getItem("mealData");
-    if (meals) {
-      setMeals(JSON.parse(meals));
-    } else {
-      try {
-        const res = await axios.get(`${apiUrl}/meals`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (res) {
-          await AsyncStorage.setItem("mealData", JSON.stringify(res.data));
-          setMeals(res.data);
-        }
-      } catch (error) {
-        // console.error("Error fetching meal data:", error);
-      }
-    }
-  };
-
-  const checkUser = async () => {
-    const userToken = await SecureStore.getItemAsync("userToken");
-    const personalDetails = await AsyncStorage.getItem("personalDetails");
-    console.log("Personal Details:", personalDetails);
-    const personalSettings = await AsyncStorage.getItem("personalSettings");
-    if (!personalDetails) {
-      try {
-        const res = await axios.get(`${apiUrl}/users/view/personal`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (res) {
-          const dataPersonal: IPersonalDetails = res.data;
-          // console.log("User personal details:", dataPersonal);
-          await AsyncStorage.setItem(
-            "personalDetails",
-            JSON.stringify(dataPersonal)
-          );
-          if (dataPersonal.caloriesIndex === null) {
-            router.push(`/Profile/Personal?newUser=${true}`);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    }
-    if (!personalSettings) {
-      try {
-        const res = await axios.get(`${apiUrl}/users/view/setting`, {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        });
-        if (res) {
-          const userSettings: IUser = res.data;
-          await AsyncStorage.setItem(
-            "personalSettings",
-            JSON.stringify(userSettings)
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching user settings:", error);
-      }
-    }
-  };
-
+  const { syncUser } = useAuth();
   useEffect(() => {
-    checkLoginStatus();
-    // getMacroOverview();
-    // getWaterIntake();
-    // getMealData();
-    checkUser();
+    (async () => {
+      await syncUser();
+    })();
   }, []);
 
   useEffect(() => {

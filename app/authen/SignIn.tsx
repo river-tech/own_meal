@@ -11,10 +11,7 @@ import {
   useColorScheme,
   Animated,
 } from "react-native";
-import Axios from "axios";
 import axios from "axios";
-import { faFaceSadTear } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import * as SecureStore from "expo-secure-store";
 
 const SignIn = () => {
@@ -58,29 +55,25 @@ const SignIn = () => {
         username: username,
         password: password,
       });
-
-      // Chuyển hướng đến trang chính hoặc thực hiện hành động khác sau khi đăng nhập thành công
-
       if (res) {
+        await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
+        await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
         if (rememberMe) {
           await SecureStore.setItemAsync("rememberMe", "true"); // Lưu trạng thái Remember Me
-          await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
-          await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
         }
-        console.log("Login successful");
-        await SecureStore.setItemAsync("userToken", res.data.token); // Lưu token vào SecureStore
        
+        await SecureStore.setItemAsync("userToken", JSON.stringify(res.data.token)); // Lưu token vào SecureStore
+
         // console.log(res.data);
         router.push("/dashboard/Home"); // Giả sử bạn muốn chuyển hướng về trang chính♫
       }
     } catch (error) {
       setError(true);
-      // setTimeout(() => setError(false), 2000);
-      // console.error("Login failed:", error);
       if (rememberMe) {
         await SecureStore.setItemAsync("rememberMe", "true"); // Lưu trạng thái Remember Me
         await SecureStore.deleteItemAsync("username"); // Xóa tên người dùng đã lưu
         await SecureStore.deleteItemAsync("password"); // Xóa mật khẩu đã lưu
+        await 
         await SecureStore.setItemAsync("username", username); // Lưu tên người dùng
         await SecureStore.setItemAsync("password", password); // Lưu mật khẩu
       } else {
@@ -90,6 +83,7 @@ const SignIn = () => {
       }
     }
   };
+
 
   return (
     <KeyboardAvoidingView

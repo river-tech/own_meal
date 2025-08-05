@@ -1,4 +1,4 @@
-import React, { act, use, useEffect, useState } from "react";
+import React, {  useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,8 @@ import {
 } from "react-native";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
-  faArrowDown,
   faArrowLeft,
   faArrowRight,
-  faArrowUp,
   faMars,
   faVenus,
 } from "@fortawesome/free-solid-svg-icons";
@@ -25,6 +23,7 @@ import axios from "axios";
 import { IPersonalDetails } from "model/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSearchParams } from "expo-router/build/hooks";
+import useAuth from "app/hooks/useAuth";
 
 export enum EUserGoal {
   GAIN_WEIGHT = "GAIN_WEIGHT",
@@ -82,33 +81,33 @@ export default function PersonalInformationScreen() {
   const boxStyle = `rounded-lg border border-gray-400 items-center justify-center ${darkMode ? "bg-[#444]" : "bg-white"}`;
   const [err, setErr] = useState<string | null>(null);
 
-  const getPersonalDetails = async () => {
-    const personalDetails = await AsyncStorage.getItem("personalDetails");
-    if (personalDetails) {
-      const personalDetailsData: IPersonalDetails = JSON.parse(personalDetails);
-      console.log("Fetched Personal Details:", personalDetailsData);
-      setGender(personalDetailsData.gender);
-      setHeight(personalDetailsData.height ?? 0);
-      setWeight(personalDetailsData.weight ?? 0);
-      setHeightUnit(personalDetailsData.heightUnit as EHeightUnit);
-      setWeightUnit(personalDetailsData.weightUnit as EWeightUnit);
-      setGoal(personalDetailsData.userGoal as unknown as EUserGoal);
-      setAge(personalDetailsData.age ?? 0);
-      setBodyfat(personalDetailsData.bodyFat ?? 0);
-      const found = activityOptions.find(
-        (opt) => opt.value === personalDetailsData.activityLevel
-      );
-      setActivity({
-        label: found?.label ?? "Select",
-        value: personalDetailsData.activityLevel ?? 1.2,
-      });
-      setCalorieAdjustment(personalDetailsData.caloriesIndex ?? 0);
-      setBMR(personalDetailsData.bmrIndex ?? 0);
-      setBMI(personalDetailsData.bmiIndex ?? 0);
-    }
-  };
+  const {getToken , fetchProfile} = useAuth();
+
+  
   useEffect(() => {
-    getPersonalDetails();
+    async function loadProfile() {
+      const res: IPersonalDetails | null = await fetchProfile();
+      if (res) {
+        setHeight(res.height!);
+        setWeight(res.weight!);
+        setGender(res.gender!);
+        setAge(res.age!);
+        setBodyfat(res.bodyFat!);
+        setActivityLevel(res.activityLevel!);
+        setHeightUnit(res.heightUnit!);
+        setWeightUnit(res.weightUnit!);
+        setGoal(res.userGoal!);
+        setBMR(res.bmrIndex!);
+        setBMI(res.bmiIndex!);
+        setCalorieAdjustment(res.caloriesIndex!);
+        setActivity({
+          label: activityOptions.find((a) => a.value === res.activityLevel!)?.label || "Select",
+          value: res.activityLevel!,
+        });
+        setChange(true);
+      }
+    }
+    loadProfile();
   }, []);
 
   // ô select của unit
@@ -212,8 +211,7 @@ export default function PersonalInformationScreen() {
 
   // tự dộng tính calo
   useEffect(() => {
-    if (change) {
-    }
+    
     const rawWeight = weight;
     const rawHeight = height;
     const a = age;
@@ -229,13 +227,13 @@ export default function PersonalInformationScreen() {
     let bmrCalc = 0;
 
     if (gender === true) {
-      bmrCalc = 88.362 + 13.397 * w + 4.799 * h - 5.677 * a;
+      bmrCalc = 88.362 + 13.397 * lbm + 4.799 * h - 5.677 * a;
     } else {
-      bmrCalc = 447.593 + 9.247 * w + 3.098 * h - 4.33 * a;
+      bmrCalc = 447.593 + 9.247 * lbm + 3.098 * h - 4.33 * a;
     }
 
     const heightInM = h / 100;
-    const bmiCalc = w / (heightInM * heightInM);
+    const bmiCalc = lbm / (heightInM * heightInM);
 
     let calorieAdj = 0;
     if (goal === EUserGoal.GAIN_WEIGHT) calorieAdj = 500;
@@ -303,7 +301,7 @@ export default function PersonalInformationScreen() {
       return;
     }
     setErr(null);
-    const userToken = await SecureStore.getItemAsync("userToken");
+    const userToken = await getToken();
     try {
       const method = newUser ? "POST" : "PUT";
       const url = `${apiUrl}/${newUser ? "users/create/personal" : "users/edit/personal"}`;

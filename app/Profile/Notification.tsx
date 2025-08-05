@@ -1,44 +1,43 @@
 import { faArrowLeft, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import useAuth from "app/hooks/useAuth";
+import useNoti from "app/hooks/useNoti";
+import axios from "axios";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, useColorScheme } from "react-native";
-
-const notificationsData = [
-  {
-    id: 1,
-    title: "Title",
-    description:
-      "Hãy kiểm tra các tính năng mới được cập nhật trong phiên bản 2.0.",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "Title",
-    description:
-      "Hãy kiểm tra các tính năng mới được cập nhật trong phiên bản 2.0.",
-    read: true,
-  },
-];
+import { INotification } from "model/notification";
+import React, { use, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Modal,
+  useColorScheme,
+} from "react-native";
 
 const NotificationScreen = () => {
-  const [notifications, setNotifications] = useState(notificationsData);
+  const [notifications, setNotifications] = useState<INotification[]>([]);
   const [filter, setFilter] = useState("All");
   const [modalVisible, setModalVisible] = useState(false); // Modal state
-  const [selectedNotification, setSelectedNotification] = useState<number | null>(null); // Keep track of the notification to delete
+  const [selectedNotification, setSelectedNotification] = useState<
+    number | null
+  >(null); // Keep track of the notification to delete
   const [deleteAll, setDeleteAll] = useState(false); // Flag to check if deleting all
-
   const colorScheme = useColorScheme();
   const darkMode = colorScheme === "dark";
+  const { getToken } = useAuth();
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+  const { schedulePushNotification } = useNoti();
 
   const filteredNotifications = notifications.filter((notification) => {
     if (filter === "All") return true;
-    return filter === "Read" ? notification.read : !notification.read;
+    return filter === "Read" ? notification.isRead : !notification.isRead;
   });
 
   const toggleReadStatus = (id: number) => {
     const updatedNotifications = notifications.map((notification) =>
-      notification.id === id && !notification.read // Chỉ chuyển thành Read khi trạng thái là Unread
+      notification.id === id && !notification.isRead // Chỉ chuyển thành Read khi trạng thái là Unread
         ? { ...notification, read: true }
         : notification
     );
@@ -47,25 +46,50 @@ const NotificationScreen = () => {
 
   const markAsUnread = (id: number) => {
     const updatedNotifications = notifications.map((notification) =>
-      notification.id === id && notification.read // Chỉ chuyển thành Unread khi trạng thái là Read
-        ? { ...notification, read: false }
+      notification.id === id && notification.isRead // Chỉ chuyển thành Unread khi trạng thái là Read
+        ? { ...notification, isRead: false }
         : notification
     );
     setNotifications(updatedNotifications);
   };
 
-  const deleteNotification = (id: number) => {
+  const deleteNotification = async (id: number) => {
     setNotifications(
       notifications.filter((notification) => notification.id !== id)
     );
+    try {
+     await axios.delete(`${API_URL}/notifications/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
   };
 
-  const deleteAllNotifications = () => {
+  const deleteAllNotifications = async () => {
     setNotifications([]);
     setModalVisible(false); // Close modal after delete all
   };
 
   const router = useRouter();
+
+  const notiFetch = async () => {
+    const userToken = await getToken();
+    try {
+      const response = await axios.get(`${API_URL}/notifications/showAll`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  useEffect(() => {
+    notiFetch();
+  }, []);
 
   return (
     <View className={`flex-1 ${darkMode ? "bg-[#1e1e1e]" : "bg-[#f7e7d5]"}`}>
@@ -130,43 +154,40 @@ const NotificationScreen = () => {
         data={filteredNotifications}
         renderItem={({ item }) => (
           <View
-            className={`p-4 rounded-xl my-2 ${item.read ? "bg-gray-200" : "bg-orange-50"}`}
+            className={`p-4 rounded-xl my-2 ${item.isRead ? "bg-gray-200" : "bg-orange-50"}`}
           >
-            <TouchableOpacity onPress={() => toggleReadStatus(item.id)}>
-              <Text
-                className={`font-bold text-xl py-2 text--black `}
-              >
+            <TouchableOpacity onPress={() => toggleReadStatus(item.id!)}>
+              <Text className={`font-bold text-xl py-2 text--black `}>
                 {item.title}
               </Text>
-              <Text
-                className={`text-gray-600`}
-              >
-                {item.description}
-              </Text>
+              <Text className={`text-gray-600`}>{item.description}</Text>
               <View className="flex-row justify-between items-center mt-2 ">
                 <View className="mt-4">
-                  {item.read && (
+                  {item.isRead && (
                     <TouchableOpacity
                       onPress={() => {
-                        markAsUnread(item.id);
+                        markAsUnread(item.id!);
                       }}
-                      className={`${darkMode? "bg-gray-600":"bg-orange-400"} px-4 py-2 rounded-lg`}
+                      className={`${darkMode ? "bg-gray-600" : "bg-orange-400"} px-4 py-2 rounded-lg`}
                     >
-                      <Text className="text-white font-bold">Mask as unread</Text>
+                      <Text className="text-white font-bold">
+                        Mask as unread
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity onPress={() => {
-                  setSelectedNotification(item.id);
-                  setModalVisible(true);
-                }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedNotification(item.id!);
+                    setModalVisible(true);
+                  }}
+                >
                   <FontAwesomeIcon color="#E63946" icon={faTrash} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
           </View>
         )}
-        keyExtractor={(item) => item.id.toString()}
       />
 
       {/* Delete All Button */}
@@ -180,6 +201,18 @@ const NotificationScreen = () => {
         <FontAwesomeIcon color="#fff" icon={faTrash} />
         <Text className="text-white ml-2">Delete All</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() =>
+          schedulePushNotification({
+            title: "Test Notification",
+            body: "This is a test notification",
+            // seconds: 2, // Default to 2 seconds if not provided
+          })
+        }
+        className="absolute bottom-5 left-5 transform bg-blue-500 p-3 rounded-full justify-center items-center"
+      >
+        <Text className="text-white">trigger</Text>
+      </TouchableOpacity>
 
       {/* Modal for Confirmation */}
       <Modal
@@ -191,16 +224,19 @@ const NotificationScreen = () => {
           setDeleteAll(false); // Reset deleteAll to false on modal close
         }}
       >
-       <View className="flex-1 items-center justify-center px-4 h-screen  bg-black/30">
-
+        <View className="flex-1 items-center justify-center px-4 h-screen  bg-black/30">
           <View className="bg-white p-6 rounded-lg w-4/5">
             <Text className="text-xl font-bold mb-4">
-              Are you sure you want to {deleteAll ? "delete all" : "delete this item"}?
+              Are you sure you want to{" "}
+              {deleteAll ? "delete all" : "delete this item"}?
             </Text>
             <View className="flex-row mt-2 justify-between">
               <TouchableOpacity
                 onPress={() => {
-                  deleteAll ? deleteAllNotifications() : (selectedNotification !== null && deleteNotification(selectedNotification));
+                  deleteAll
+                    ? deleteAllNotifications()
+                    : selectedNotification !== null &&
+                      deleteNotification(selectedNotification);
                   setModalVisible(false);
                   setDeleteAll(false); // Reset deleteAll after confirming
                 }}

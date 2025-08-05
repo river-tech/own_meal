@@ -22,12 +22,3 @@ interface IFoodItem {
   total: number;
 }
 
-
-export interface IMealSetting {
-  mealId: number;
-  mealName: string;
-  percentKcal: number;
-  time?: string;
-}
-
-

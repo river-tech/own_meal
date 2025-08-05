@@ -13,6 +13,8 @@ import {
 import { BellIcon, Cog6ToothIcon } from "react-native-heroicons/outline";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import useAuth from "app/hooks/useAuth";
 
 export default function Navbar() {
   const colorScheme = useColorScheme();
@@ -21,19 +23,23 @@ export default function Navbar() {
   // Set icon size dynamically based on color scheme
   const iconSize = isDark ? 20 : 24;
   const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [userInfo, setUserInfo] = React.useState<IUser | null>(null);
+  const { fetchSettings} = useAuth();
   useEffect(() => {
     const getUserInfo = async () => {
-      const userSetting = await AsyncStorage.getItem("personalSettings");
-      console.log("User Setting:", userSetting);
-      if (userSetting) {
-        setUserInfo(JSON.parse(userSetting) as IUser);
-        console.log("User info:", JSON.parse(userSetting));
+      try {
+        const userSettings = await fetchSettings();
+        if (userSettings) {
+          setUserInfo(userSettings);
+          console.log("User info:", userSettings);
+        }
+      } catch (error: any) {
+        console.error("Error fetching user settings:", error);
       }
     };
     getUserInfo();
-  },[])
-  
+  }, [router]);
 
   return (
     <View className={`flex-row justify-between items-center px-4 mt-20`}>
@@ -45,11 +51,11 @@ export default function Navbar() {
         >
           <View className="w-12 h-12 rounded-full border-2 border-white overflow-hidden mr-[10px] z-10 bg-white">
             <Image
-             source={{
-              uri: userInfo?.avatar
-                ? userInfo?.avatar
-                : "https://i.pinimg.com/736x/62/74/8d/62748d84867c925f8d21ad7fdb475f7b.jpg",
-            }}
+              source={{
+                uri: userInfo?.avatar
+                  ? userInfo?.avatar
+                  : "https://i.pinimg.com/736x/62/74/8d/62748d84867c925f8d21ad7fdb475f7b.jpg",
+              }}
               className="w-full h-full"
               resizeMode="cover"
             />
@@ -59,7 +65,9 @@ export default function Navbar() {
           <View
             className={`bg-orange-500 px-5 pl-45 py-1 rounded-full shadow-lg`}
           >
-            <Text className="font-semibold text-white text-lg">{userInfo?.username}</Text>
+            <Text className="font-semibold text-white text-lg">
+              {userInfo?.username}
+            </Text>
           </View>
         </TouchableOpacity>
         {/* Avatar */}
@@ -68,10 +76,13 @@ export default function Navbar() {
       {/* Notification + Setting */}
       <View className="flex-row gap-5">
         <TouchableOpacity
-        onPress={() => router.push("/Profile/WeightLog")}
+          onPress={() => router.push("/Profile/WeightLog")}
           className={`w-12 h-12 rounded-full shadow items-center justify-center ${isDark ? "bg-gray-700" : "bg-white"}`}
         >
-          <FontAwesomeIcon color={isDark ? "#FB923C" : "#FB923C"} icon={faWeightScale} />
+          <FontAwesomeIcon
+            color={isDark ? "#FB923C" : "#FB923C"}
+            icon={faWeightScale}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.push("/Profile/Notification")}

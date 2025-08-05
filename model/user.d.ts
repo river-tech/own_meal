@@ -3,11 +3,16 @@ import { EUserDietType } from "app/Profile/Personal/MacroSetting";
 
 
 export interface IUser {
-  userId: int;
-  username: string | null;
-  email: string | null;
-  avatar: string | null;
-  notification: string | null;
+  userId?: number;
+  username?: string | null;
+  email?: string | null;
+  avatar?: string | null;
+  notification?: boolean | null;
+}
+
+export interface IToken {
+  value: string;
+  expires: string;
 }
 
 
@@ -28,25 +33,15 @@ export interface IPersonalDetails {
 }
 
 export interface ImacroDetails {
-  caloriesTarget: number; // Tổng số calo cần
+  caloriesTarget:  number; // Tổng số calo cần
   mealNumber: number; // Số lượng bữa ăn
   dietType: EUserDietType; // Loại chế độ ăn
   carbPercent: number; // Tỉ lệ carb
   proteinPercent: number; // Tỉ lệ protein
   fatPercent: number; // Tỉ lệ chất béo
   waterTargetMl: number; // Mục tiêu nước (ml)
-  meals: IMealDefine[]; // Danh sách các bữa ăn
 }
 
-export interface IMacroOnly{
-  caloriesTarget: number; // Tổng số calo cần
-  mealNumber: number; // Số lượng bữa ăn
-  dietType: EUserDietType; // Loại chế độ ăn
-  carbPercent: number; // Tỉ lệ carb
-  proteinPercent: number; // Tỉ lệ protein
-  fatPercent: number; // Tỉ lệ chất béo
-  waterTargetMl: number; // Mục tiêu nước (ml)
-}
 
 export interface IMealDefine {
   id?: number; // ID của bữa ăn, có thể không có nếu là bữa ăn mới
